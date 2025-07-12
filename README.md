@@ -4,6 +4,8 @@
 
 ## Architecture
 
+<img width="597" height="362" alt="image" src="https://github.com/user-attachments/assets/ca3f4103-3b92-4154-84dd-b1ecfbffe9e2" />
+
 ## 주요 구현
 
 ### 모델 정보의 확인
