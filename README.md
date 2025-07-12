@@ -4,6 +4,8 @@
 
 ## Architecture
 
+여기서 구현하려는 전체 Architecture는 아래와 같습니다. EC2에 application과 MCP를 올리고 CloudFront와 ALB를 이용해 안전하게 외부와 연결합니다. 결과물이나 RAG문서를 공유할 때에는 S3에 파일을 올리고 CloudFront를 이용해 제공합니다. 또한 Bedrock Knowledge Base를 이용해 RAG를 구성합니다. RAG에 넣을 문서는 S3와 동기화를 통해 chunking을 수행하고 관련된 문서로 활용합니다. 필요시 AWS Document의 문서를 MCP를 이용해 활용할 수 있습니다. 
+
 <img width="597" height="362" alt="image" src="https://github.com/user-attachments/assets/ca3f4103-3b92-4154-84dd-b1ecfbffe9e2" />
 
 ## 주요 구현
