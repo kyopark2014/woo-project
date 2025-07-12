@@ -2,6 +2,47 @@
 
 이 프로젝트는 RAG를 이용해 조회한 문서에서 Text Case를 추출하는 예제입니다.
 
+## Architecture
+
+## 주요 구현
+
+### 모델 정보의 확인
+
+```python
+def get_model():
+    STOP_SEQUENCE = "\n\nHuman:" 
+    maxOutputTokens = 4096 # 4k
+
+    bedrock_config = Config(
+        read_timeout=900,
+        connect_timeout=900,
+        retries=dict(max_attempts=3, mode="adaptive"),
+    )
+
+    import boto3
+    bedrock_client = boto3.client(
+        'bedrock-runtime',
+        region_name=aws_region,
+        config=bedrock_config
+    )
+
+    model = BedrockModel(
+        client=bedrock_client,
+        model_id=model_id,
+        max_tokens=maxOutputTokens,
+        stop_sequences = [STOP_SEQUENCE],
+        temperature = 0.1,
+        top_p = 0.9,
+        additional_request_fields={
+            "thinking": {
+                "type": "disabled"
+            }
+        }
+    )
+    return model
+```
+
+
 ## 실행 결과
 
 Terminal에서 아래와 같이 실행합니다.
