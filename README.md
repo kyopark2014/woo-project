@@ -8,7 +8,12 @@
 
 ### 모델 정보의 확인
 
+여기에서는 Anthropic Claude 3.7을 사용합니다. 목적에 맞게 적절한 모델을 선택할 수 있습니다.
+
 ```python
+import boto3
+model_id = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+
 def get_model():
     STOP_SEQUENCE = "\n\nHuman:" 
     maxOutputTokens = 4096 # 4k
@@ -18,8 +23,7 @@ def get_model():
         connect_timeout=900,
         retries=dict(max_attempts=3, mode="adaptive"),
     )
-
-    import boto3
+    
     bedrock_client = boto3.client(
         'bedrock-runtime',
         region_name=aws_region,
