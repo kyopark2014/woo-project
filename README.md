@@ -211,3 +211,25 @@ result = await show_streams(agent_stream)
 실행한 결과의 한 예는 [test_case.md](./test_case.md)와 같습니다. 이 결과의 일부는 아래와 같습니다.
 
 <img width="651" height="780" alt="image" src="https://github.com/user-attachments/assets/32e1e792-2e4b-49da-9c1c-09bcf3265f49" />
+
+## Reference
+
+[Strands Agents와 오픈 소스 AI 에이전트 SDK 살펴보기](https://aws.amazon.com/ko/blogs/tech/introducing-strands-agents-an-open-source-ai-agents-sdk/)
+
+[Streamlit으로 구현한 Strands Agent](https://github.com/kyopark2014/strands-agent)
+
+[Strands Agents SDK](https://strandsagents.com/0.1.x/)
+
+[Strands Agents Samples](https://github.com/strands-agents/samples/tree/main)
+
+[Example Built-in Tools](https://strandsagents.com/0.1.x/user-guide/concepts/tools/example-tools-package/)
+
+[Introducing Strands Agents, an Open Source AI Agents SDK](https://aws.amazon.com/ko/blogs/opensource/introducing-strands-agents-an-open-source-ai-agents-sdk/)
+
+[use_aws.py](https://github.com/strands-agents/tools/blob/main/src/strands_tools/use_aws.py)
+
+[Strands Agents와 오픈 소스 AI 에이전트 SDK 살펴보기](https://aws.amazon.com/ko/blogs/tech/introducing-strands-agents-an-open-source-ai-agents-sdk/)
+
+[Drug Discovery Agent based on Amazon Bedrock](https://github.com/hsr87/drug-discovery-agent)
+
+[Strands Agent - Swarm](https://strandsagents.com/latest/user-guide/concepts/multi-agent/swarm/)
