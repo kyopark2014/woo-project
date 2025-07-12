@@ -178,7 +178,7 @@ def get_model():
     STOP_SEQUENCE = "\n\nHuman:" 
     maxOutputTokens = 4096 # 4k
 
-    # Bedrock 클라이언트 설정
+    # Bedrock client configuration
     bedrock_config = Config(
         read_timeout=900,
         connect_timeout=900,
@@ -210,9 +210,9 @@ def get_model():
 def create_agent(system_prompt, tools):
     if system_prompt==None:
         system_prompt = (
-            "당신은 경험이 많은 QA Engineer 입니다."
-            "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다." 
-            "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            "You are an experienced QA Engineer."
+            "Provide sufficient specific details appropriate to the situation." 
+            "If you don't know the answer to a question, honestly say you don't know."
         )
 
     model = get_model()
@@ -229,7 +229,7 @@ def get_tool_list(tools):
         if hasattr(tool, 'tool_name'):  # MCP tool
             tool_list.append(tool.tool_name)
                 
-        if str(tool).startswith("<module 'strands_tools."):   # strands_tools 
+        if str(tool).startswith("<module 'strands_tools."):   
             module_name = str(tool).split("'")[1].split('.')[-1]
             tool_list.append(module_name)
     return tool_list
@@ -283,7 +283,7 @@ async def loader():
 
     query = "9-2. 픽업필터 off일시"
 
-    # init mcp clients
+    # initialize mcp clients
     init_mcp_clients(config)
 
     # load tools
