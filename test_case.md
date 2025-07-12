@@ -1,5 +1,3 @@
-Based on the information retrieved from the knowledge base, I'll now create test cases for the "픽업필터 off일시" (Pickup Filter Off) functionality. Let me first summarize the key information:
-
 ## 픽업필터 off일시 정책 요약 (Pickup Filter Off Policy Summary)
 
 1. 픽업필터가 off일 때는 기존 배달탭 노출정책을 따름
@@ -214,7 +212,3 @@ Based on the information retrieved from the knowledge base, I'll now create test
 - CPC 광고가 검색 결과에 노출되지 않음
 
 이상의 테스트 케이스는 픽업필터 off일시의 기능을 검증하기 위한 것입니다. 각 테스트 케이스는 픽업필터 off일 때의 노출 정책, 운영 상태, 추천리랭킹 결과, 브로스(OD) 노출 조건 등을 검증합니다.
-
-### Reference
-1. [searchplatform-[Phase1] 4월8일 오픈타겟 검색지면 포장 대응-270625-100949.pdf](https://d3ccvlp2e9rt0m.cloudfront.net/docs/searchplatform-%5BPhase1%5D%204%E1%84%8B%E1%85%AF%E1%86%AF8%E1%84%8B%E1%85%B5%E1%86%AF%20%E1%84%8B%E1%85%A9%E1%84%91%E1%85%B3%E1%86%AB%E1%84%90%E1%85%A1%E1%84%80%E1%85%A6%E1%86%BA%20%E1%84%80%E1%85%A5%E1%86%B7%E1%84%89%E1%85%A2%E1%86%A8%E1%84%8C%E1%85%B5%E1%84%86%E1%85%A7%E1%86%AB%20%E1%84%91%E1%85%A9%E1%84%8C%E1%85%A1%E1%86%BC%20%E1%84%83%E1%85%A2%E1%84%8B%E1%85%B3%E1%86%BC-270625-100949.pdf), # 픽업필터 off일시 가게노출정책 (기존 배달탭 노출정책을 따름)* 메뉴존재여부: 주문가능한 상태의 메뉴가 하나라도 매칭이되면 메뉴가 있다고 봄* finalOperation: true → 가게 운영중/준비중을 판단 (false: 가게준비중)* baropayLive (바로페이라이브): true (= 주문가능시스템 Order Availability Sy......
-2. [searchplatform-[Phase1] 4월8일 오픈타겟 검색지면 포장 대응-270625-100949.pdf](https://d3ccvlp2e9rt0m.cloudfront.net/docs/searchplatform-%5BPhase1%5D%204%E1%84%8B%E1%85%AF%E1%86%AF8%E1%84%8B%E1%85%B5%E1%86%AF%20%E1%84%8B%E1%85%A9%E1%84%91%E1%85%B3%E1%86%AB%E1%84%90%E1%85%A1%E1%84%80%E1%85%A6%E1%86%BA%20%E1%84%80%E1%85%A5%E1%86%B7%E1%84%89%E1%85%A2%E1%86%A8%E1%84%8C%E1%85%B5%E1%84%86%E1%85%A7%E1%86%AB%20%E1%84%91%E1%85%A9%E1%84%8C%E1%85%A1%E1%86%BC%20%E1%84%83%E1%85%A2%E1%84%8B%E1%85%B3%E1%86%BC-270625-100949.pdf), # 픽업필터 정책 * 픽업필터 "Off" 일시에는 추천리랭킹결과가 1위~25위 노출됨 * 픽업필터 Off일시, 추천리랭킹결과 중 운영중 주문유형을 대상이라서 준비중이면 displayable=false로 노출 * 픽업ON일시 울트라콜 광고는 후순위에 노출된다. (MP상품개편정책적용) ## 순위 정책 1. 1순위: 픽업주문가능(활성화) + 배달광고 (배민1플러......
