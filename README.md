@@ -139,6 +139,34 @@ with mcp_manager.get_active_clients(mcp_servers) as _:
         f.write(result)
 ```
 
+## 실행 준비
+
+### 환경 준비
+
+여기에서는 S3, CloudFront, OpenSearch (Serverless), Bedrock Knowledge Base를 활용합니다. 이를 위한 상세 내용은 [cdk-woo-project-stack.ts](./cdk-woo-project/lib/cdk-woo-project-stack.ts)을 참조합니다. 이를 인프라로 배포할 때에는 아래와 같이 수행합니다.
+
+먼저, cdk-woo-project로 이동하여 CDK 환경설정을 준비합니다. 만약 한번도 bootstrapping을 하지 않았다면, [AWS CDK 부트스트래핑](https://docs.aws.amazon.com/ko_kr/cdk/v2/guide/bootstrapping.html)을 참조하여 수행합니다.
+
+- Bootstrapping
+
+여기서 account-id를 확인하여 아래의 "123456789012"을 바꾼후 실행합니다.
+
+```text
+cdk bootstrap aws://123456789012/us-west-2
+```
+
+- CDK 배포
+
+```text
+cd cdk-woo-project && npm install
+cdk deploy --require-approval never --all
+```
+
+배포가 완료되면 아래와 같은 Output 파일에서 CdkWooProjectStack.environmentforwooproject을 복사하여 [config.json](./config.json)을 업데이트 합니다.
+
+<img width="1047" height="141" alt="image" src="https://github.com/user-attachments/assets/c76ae1f4-f612-4e6e-b755-3e3cbacdbd53" />
+
+
 ## 실행 결과
 
 Terminal에서 아래와 같이 실행합니다.
