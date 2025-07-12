@@ -1,0 +1,17 @@
+{
+    "mcpServers": {
+        "knowledge_base_lambda": {
+            "command": "python",
+            "args": [
+                "mcp_server_lambda_knowledge_base.py"
+            ]
+        },
+        "awslabs.aws-documentation-mcp-server": {
+            "command": "uvx",
+            "args": ["awslabs.aws-documentation-mcp-server@latest"],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "ERROR"
+            }
+        }
+    }
+}
