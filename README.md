@@ -1,6 +1,6 @@
 # Woo Project
 
-이 프로젝트는 RAG를 이용해 조회한 문서에서 Text Case를 추출하는 예제입니다. RAG 및 다른 data source를 위하여 MCP를 활용하며, multi step reasoning이 우수한 [Strands Agent](https://github.com/kyopark2014/strands-agent)를 활용합니다. 
+이 프로젝트는 Test Case를 생성하기 위해 MCP로 구현된 RAG를 활용합니다. 생성할 Test Case에 대해 RAG를 조회한 후에 얻어진 문서에서 Test Case를 추출합니다. 또한 여기에서는 multi step reasoning이 우수한 [Strands Agent](https://github.com/kyopark2014/strands-agent)를 활용합니다. 
 
 ## Architecture
 
