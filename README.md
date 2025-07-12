@@ -46,6 +46,98 @@ def get_model():
     return model
 ```
 
+### MCP 서버의 설정
+
+여기에서는 [mcp.json](./mcp.json)에서 MCP 서버의 정보를 가져옵니다. 아래는 mcp.json의 예입니다. knowledge_base_lambda는 lambda를 이용해 knowledge base를 조회합니다. awslabs.aws-documentation-mcp-server는 AWS document의 문서를 조회하는 MCP 서버입니다.
+
+```java
+{
+    "mcpServers": {
+        "knowledge_base_lambda": {
+            "command": "python",
+            "args": [
+                "mcp_server_lambda_knowledge_base.py"
+            ]
+        },
+        "awslabs.aws-documentation-mcp-server": {
+            "command": "uvx",
+            "args": ["awslabs.aws-documentation-mcp-server@latest"],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "ERROR"
+            }
+        }
+    }
+}
+```
+
+mcp.json에서 mcpServers의 정보를 가져와서 client로 등록합니다.
+
+```python
+def init_mcp_clients(config: dict):
+    for server_key, server_config in config["mcpServers"].items():
+        name = server_key  
+        command = server_config["command"]
+        args = server_config["args"]
+        env = server_config.get("env", {})  # Use empty dict if env is not present                
+        mcp_manager.add_client(name, command, args, env)
+```
+
+아래와 같이 사용할 MCP 서버를 지정하고 tool의 정보를 조회합니다.
+
+```python
+mcp_servers = ["knowledge_base_lambda", "awslabs.aws-documentation-mcp-server"]
+tools = update_tools(mcp_servers)
+
+tool_list = get_tool_list(tools)
+logger.info(f"tool_list: {tool_list}")
+
+def update_tools(mcp_servers: list):
+    tools = []
+    mcp_servers_loaded = 0
+    for mcp_tool in mcp_servers:
+        with mcp_manager.get_active_clients([mcp_tool]) as _:
+            client = mcp_manager.get_client(mcp_tool)
+            if client:
+                mcp_servers_list = client.list_tools_sync()
+                if mcp_servers_list:
+                    tools.extend(mcp_servers_list)
+                    mcp_servers_loaded += 1
+            else:
+                logger.error(f"Failed to get client for {mcp_tool}")
+    return tools
+```
+
+Strands agent를 생성합니다.
+
+```python
+def create_agent(system_prompt, tools):
+    if system_prompt==None:
+        system_prompt = (
+            "You are an experienced QA Engineer."
+            "Provide sufficient specific details appropriate to the situation." 
+            "If you don't know the answer to a question, honestly say you don't know."
+        )
+
+    model = get_model()
+    agent = Agent(
+        model=model,
+        system_prompt=system_prompt,
+        tools=tools
+    )
+    return agent
+```
+
+아래와 같이 agent를 실행하여 결과를 얻습니다. 
+
+```python
+agent = create_agent(system_prompt=None, tools=tools)
+with mcp_manager.get_active_clients(mcp_servers) as _:
+    agent_stream = agent.stream_async(f"KnowledgeBase를 이용해 {query}에 대한 정보를 조회하고, test하기 위한 test case를 작성해주세요.")
+    result = await show_streams(agent_stream)
+    # save result to file
+    with open("test_case.md", "w", encoding="utf-8") as f:
+        f.write(result)
+```
 
 ## 실행 결과
 
