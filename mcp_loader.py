@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import utils
 import knowledge_base
+import boto3
 
 from typing import Dict, List, Optional
 from strands.tools.mcp import MCPClient
@@ -184,8 +185,7 @@ def get_model():
         connect_timeout=900,
         retries=dict(max_attempts=3, mode="adaptive"),
     )
-
-    import boto3
+    
     bedrock_client = boto3.client(
         'bedrock-runtime',
         region_name=aws_region,
