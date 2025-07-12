@@ -182,7 +182,7 @@ Knowledge Base에서 문서를 활용하기 위해서는 S3에 문서 등록 및
 
 ### 실행하기 
 
-Terminal에서 아래와 같이 실행합니다.
+Terminal을 열고 github 주소로 이동한 후에 아래와 같이 실행합니다.
 
 ```text
 python mcp_loader.py
@@ -198,9 +198,10 @@ agent_stream = agent.stream_async(f"KnowledgeBase를 이용해 {query}에 대한
 result = await show_streams(agent_stream)
 ```
 
+원하는 목적에 맞게 query를 바꿔서 수행합니다.
 
 
-## 실행 결과
+### 실행 결과
 
 
 실행한 결과는 [test_case.md](./test_case.md)에서 확인할 수 있습니다. 이 결과의 일부는 아래와 같이 확인이 가능합니다.
