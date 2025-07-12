@@ -234,10 +234,60 @@ def get_tool_list(tools):
             tool_list.append(module_name)
     return tool_list
 
+def get_tool_info(tool_name, tool_content):
+    tool_references = []    
+    urls = []
+    content = ""
+
+    try:
+        if isinstance(tool_content, dict):
+            json_data = tool_content
+        elif isinstance(tool_content, list):
+            json_data = tool_content
+        else:
+            json_data = json.loads(tool_content)
+        
+        logger.info(f"json_data: {json_data}")
+        if isinstance(json_data, dict) and "path" in json_data:  # path
+            path = json_data["path"]
+            if isinstance(path, list):
+                for url in path:
+                    urls.append(url)
+            else:
+                urls.append(path)            
+
+        for item in json_data:
+            logger.info(f"item: {item}")
+            if "reference" in item and "contents" in item:
+                url = item["reference"]["url"]
+                title = item["reference"]["title"]
+                content_text = item["contents"][:200] + "..." if len(item["contents"]) > 200 else item["contents"]
+                content_text = content_text.replace("\n", "")
+                tool_references.append({
+                    "url": url,
+                    "title": title,
+                    "content": content_text
+                })
+        logger.info(f"tool_references: {tool_references}")
+
+    except json.JSONDecodeError:
+        pass
+
+    return content, urls, tool_references
+
+def get_reference(references):
+    ref = ""
+    if references:
+        ref = "\n\n### Reference\n"
+        for i, reference in enumerate(references):
+            ref += f"{i+1}. [{reference['title']}]({reference['url']}), {reference['content']}...\n"        
+    return ref
+
 async def show_streams(agent_stream):
     tool_name = ""
     result = ""
     current_response = ""
+    references = []
 
     async for event in agent_stream:
         # logger.info(f"event: {event}")
@@ -262,18 +312,27 @@ async def show_streams(agent_stream):
                     
                     logger.info(f"tool_nmae: {tool_name}, arg: {input}")
             
+                refs = []
                 if "toolResult" in content:
                     tool_result = content["toolResult"]
                     logger.info(f"tool_name: {tool_name}")
-                    # logger.info(f"tool_result: {tool_result}")
+                    logger.info(f"tool_result: {tool_result}")
                     if "content" in tool_result:
-                        tool_content = tool_result["content"]
-                        logger.info(f"tool_content: {tool_content}")
+                        tool_content = tool_result['content']
+                        for content in tool_content:
+                            if "text" in content:
+                                content, urls, refs = get_tool_info(tool_name, content['text'])
+                                for r in refs:
+                                    references.append(r)
+                                    logger.info(f"refs: {r}")
 
         if "data" in event:
             text_data = event["data"]
             current_response += text_data
             continue
+        
+    # get reference
+    result += get_reference(references)
     
     return result
 

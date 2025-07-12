@@ -1,192 +1,220 @@
-검색 결과를 바탕으로 픽업필터 OFF일 시에 대한 정보와 테스트 케이스를 작성하겠습니다.
+Based on the information retrieved from the knowledge base, I'll now create test cases for the "픽업필터 off일시" (Pickup Filter Off) functionality. Let me first summarize the key information:
 
-# 픽업필터 OFF일 시 정보 및 테스트 케이스
+## 픽업필터 off일시 정책 요약 (Pickup Filter Off Policy Summary)
 
-## 픽업필터 OFF일 시 주요 정책 및 동작
+1. 픽업필터가 off일 때는 기존 배달탭 노출정책을 따름
+2. "baemin", "baeminOne", "stod"의 displayable, finalOperation 값을 확인
+3. 추천리랭킹결과가 1위~25위 노출됨
+4. 운영중 주문유형을 대상으로 하며, 준비중이면 displayable=false로 노출
 
-1. **기본 정책**
-   - 픽업필터 OFF 시, 기존 배달탭 노출 정책을 따름
-   - 배달 응답 스펙만 제공하고, 포장의 상태는 null로 처리됨
-   - 추천리랭킹결과가 1위~25위까지 노출됨
+### 노출 조건 (displayable: true)
+- status: open
+- ongoing: 배민1플러스/오픈리스트/울트라콜/파워콜 중 하나가 있어야함
+- baropay (바로결제): 
+  - OD only: 바로결제 true일 때만 노출
+  - MP only: 바로결제 true/false 상관없이 노출
+  - OD + MP: 바로결제 사용여부로 필터링하지 않음
+- isUseSmartmenu (스마트메뉴사용): 필터링정책에 포함하지 않음
 
-2. **가게 노출 정책**
-   - "baemin", "baeminOne", "stod"의 displayable, finalOperation 값을 기준으로 판단
-   - displayable: true → 가게 노출/미노출을 판단 (false: 가게 미노출)
-   - finalOperation: true → 가게 운영중/준비중을 판단 (false: 가게 준비중)
+### 운영 조건 (finalOperation: true)
+- baropayLive (바로페이라이브): true
+- 가게운영시간: operationTime 내에 있어야 함
 
-3. **가게 노출 조건 (displayable: true)**
-   - status: open
-   - ongoing: 배민1플러스/오픈리스트/울트라콜/파워콜 중 하나가 있어야 함
-   - baropay(바로결제) 조건:
-     - OD only인 경우: 바로결제 사용 true일 때 노출
-     - MP only인 경우: 바로결제 사용 true/false 상관없이 노출
-     - OD + MP를 모두 이용하는 경우: 바로결제 사용여부로 필터링하지 않음
-   - isUseSmartmenu(스마트메뉴사용): 필터링 정책에 포함하지 않음
+## Test Cases for 픽업필터 off일시
 
-4. **가게 운영 상태 조건 (finalOperation: true)**
-   - baropayLive(바로페이라이브): true
-   - 가게운영시간 내에 있어야 함
+### Test Case 1: 기본 노출 조건 검증
+**Title**: 픽업필터 off일 때 기본 노출 조건 검증  
+**Description**: 픽업필터가 off일 때 기존 배달탭 노출정책에 따라 가게가 노출되는지 확인  
+**Preconditions**:
+- 픽업필터가 off 상태
+- 테스트 가게 데이터 준비 (status: open, ongoing: 배민1플러스, baropay: true)
 
-5. **브로스(OD) 노출 조건**
-   - serviceable = true
-   - 센터ID 일치
-   - 배달반경:
-     - MP인 경우: 배달권역(S2)과 교집합인 경우 노출
-     - OD인 경우: 한집(4km), 알뜰(3km) 각각 반경 안에 있을 경우 노출
+**Steps**:
+1. 검색 화면에서 픽업필터를 off로 설정
+2. 검색 결과 확인
 
-## 테스트 케이스
+**Expected Results**:
+- 테스트 가게가 검색 결과에 노출됨
+- displayable: true, finalOperation: true로 설정됨
 
-### 테스트 케이스 1: 픽업필터 OFF 시 기본 응답 스펙 확인
-**목적**: 픽업필터 OFF 시 배달 응답 스펙만 제공하고 포장 상태가 null로 처리되는지 확인
+### Test Case 2: OD only 가게의 바로결제 조건 검증
+**Title**: 픽업필터 off일 때 OD only 가게의 바로결제 조건 검증  
+**Description**: OD only 가게가 바로결제 설정에 따라 올바르게 노출/미노출되는지 확인  
+**Preconditions**:
+- 픽업필터가 off 상태
+- 테스트 가게 데이터 준비 (OD only, status: open, ongoing: 울트라콜)
 
-**전제 조건**:
-- 픽업필터가 OFF 상태
-- 테스트 대상 API: 검색 API
+**Test Scenario 1**:
+1. 테스트 가게의 baropay 값을 true로 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**테스트 단계**:
-1. 픽업필터를 OFF 상태로 설정
-2. 검색 API 호출
-3. 응답 데이터 확인
+**Expected Results 1**:
+- 테스트 가게가 검색 결과에 노출됨 (displayable: true)
 
-**예상 결과**:
-- 배달 응답 스펙만 제공됨
-- 포장 상태 정보는 null로 처리됨
-- 응답 JSON에서 shops.pickup 필드가 null인지 확인
+**Test Scenario 2**:
+1. 테스트 가게의 baropay 값을 false로 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**검증 방법**:
-```json
-// 응답 예시에서 확인할 부분
-{
-  "shops": [
-    {
-      "id": "12345",
-      "name": "테스트 가게",
-      "baemin": { "displayable": true, "finalOperation": true },
-      "baeminOne": { "displayable": true, "finalOperation": true },
-      "stod": { "displayable": false, "finalOperation": false },
-      "pickup": null  // 픽업필터 OFF 시 null로 처리되는지 확인
-    }
-  ]
-}
-```
+**Expected Results 2**:
+- 테스트 가게가 검색 결과에 노출되지 않음 (displayable: false)
 
-### 테스트 케이스 2: 픽업필터 OFF 시 가게 노출 정책 확인
-**목적**: 픽업필터 OFF 시 기존 배달탭 노출 정책을 따르는지 확인
+### Test Case 3: MP only 가게의 바로결제 조건 검증
+**Title**: 픽업필터 off일 때 MP only 가게의 바로결제 조건 검증  
+**Description**: MP only 가게가 바로결제 설정에 관계없이 올바르게 노출되는지 확인  
+**Preconditions**:
+- 픽업필터가 off 상태
+- 테스트 가게 데이터 준비 (MP only, status: open, ongoing: 오픈리스트)
 
-**전제 조건**:
-- 픽업필터가 OFF 상태
-- 다양한 상태의 가게 데이터 준비 (운영중/준비중, 배달 가능/불가능, 픽업 가능/불가능)
+**Test Scenario 1**:
+1. 테스트 가게의 baropay 값을 true로 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**테스트 단계**:
-1. 픽업필터를 OFF 상태로 설정
-2. 검색 API 호출
-3. 노출되는 가게 목록 확인
+**Expected Results 1**:
+- 테스트 가게가 검색 결과에 노출됨 (displayable: true)
 
-**예상 결과**:
-- 배달 가능 여부에 따라 가게 노출 상태가 결정됨
-- 픽업 가능 여부는 노출 상태에 영향을 주지 않음
-- 배달이 불가능한 경우 "준비중" 썸네일 노출
+**Test Scenario 2**:
+1. 테스트 가게의 baropay 값을 false로 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**검증 방법**:
-- 배달 가능 & 픽업 불가능 가게: "활성화" 상태로 노출
-- 배달 불가능 & 픽업 가능 가게: "준비중" 상태로 노출
-- 배달 가능 & 픽업 가능 가게: "활성화" 상태로 노출
-- 배달 불가능 & 픽업 불가능 가게: "준비중" 상태로 노출
+**Expected Results 2**:
+- 테스트 가게가 검색 결과에 노출됨 (displayable: true)
 
-### 테스트 케이스 3: 픽업필터 OFF 시 추천리랭킹 결과 확인
-**목적**: 픽업필터 OFF 시 추천리랭킹 결과가 1위~25위까지 노출되는지 확인
+### Test Case 4: OD + MP 가게의 바로결제 조건 검증
+**Title**: 픽업필터 off일 때 OD + MP 가게의 바로결제 조건 검증  
+**Description**: OD + MP 가게가 바로결제 설정에 관계없이 올바르게 노출되는지 확인  
+**Preconditions**:
+- 픽업필터가 off 상태
+- 테스트 가게 데이터 준비 (OD + MP, status: open, ongoing: 배민1플러스)
 
-**전제 조건**:
-- 픽업필터가 OFF 상태
-- 충분한 수의 가게 데이터 준비
+**Test Scenario 1**:
+1. 테스트 가게의 baropay 값을 true로 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**테스트 단계**:
-1. 픽업필터를 OFF 상태로 설정
-2. 검색 API 호출
-3. 응답 데이터의 가게 목록 수와 순서 확인
+**Expected Results 1**:
+- 테스트 가게가 검색 결과에 노출됨 (displayable: true)
 
-**예상 결과**:
-- 추천리랭킹 결과가 1위~25위까지 노출됨
-- 운영중 주문유형을 대상으로 하며, 준비중인 경우 displayable=false로 처리됨
+**Test Scenario 2**:
+1. 테스트 가게의 baropay 값을 false로 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**검증 방법**:
-- 응답 데이터의 가게 목록 수가 최대 25개인지 확인
-- 가게 목록의 순서가 추천리랭킹 결과와 일치하는지 확인
+**Expected Results 2**:
+- 테스트 가게가 검색 결과에 노출됨 (displayable: true)
 
-### 테스트 케이스 4: 픽업필터 OFF 시 CPC 광고 노출 확인
-**목적**: 픽업필터 OFF 시 CPC 광고가 정상적으로 노출되는지 확인
+### Test Case 5: 운영 상태 검증 (finalOperation)
+**Title**: 픽업필터 off일 때 가게 운영 상태 검증  
+**Description**: 가게의 운영 상태(finalOperation)가 올바르게 설정되는지 확인  
+**Preconditions**:
+- 픽업필터가 off 상태
+- 테스트 가게 데이터 준비 (status: open, ongoing: 파워콜, baropay: true)
 
-**전제 조건**:
-- 픽업필터가 OFF 상태
-- CPC 광고가 설정된 가게 데이터 준비
+**Test Scenario 1**:
+1. 테스트 가게의 baropayLive 값을 true로 설정하고 현재 시간이 operationTime 내에 있도록 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**테스트 단계**:
-1. 픽업필터를 OFF 상태로 설정
-2. 검색 API 호출
-3. CPC 광고 슬롯 노출 여부 확인
+**Expected Results 1**:
+- 테스트 가게가 검색 결과에 운영중(finalOperation: true)으로 노출됨
 
-**예상 결과**:
-- CPC 광고 슬롯이 정상적으로 노출됨
-- 광고 블록 타입이 AD_OPEN_LIST_SEARCH_DELIVERY로 설정됨
+**Test Scenario 2**:
+1. 테스트 가게의 baropayLive 값을 false로 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**검증 방법**:
-- 응답 데이터에서 광고 블록 타입이 AD_OPEN_LIST_SEARCH_DELIVERY인지 확인
-- 광고 표시(ad: true)가 정상적으로 설정되어 있는지 확인
+**Expected Results 2**:
+- 테스트 가게가 검색 결과에 준비중(finalOperation: false)으로 노출됨
 
-### 테스트 케이스 5: 픽업필터 OFF에서 ON으로 전환 시 동작 확인
-**목적**: 픽업필터 OFF에서 ON으로 전환 시 응답 스펙이 올바르게 변경되는지 확인
+**Test Scenario 3**:
+1. 테스트 가게의 baropayLive 값을 true로 설정하고 현재 시간이 operationTime 외에 있도록 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**전제 조건**:
-- 초기 픽업필터가 OFF 상태
-- 테스트 대상 API: 검색 API
+**Expected Results 3**:
+- 테스트 가게가 검색 결과에 준비중(finalOperation: false)으로 노출됨
 
-**테스트 단계**:
-1. 픽업필터를 OFF 상태로 설정하고 검색 API 호출
-2. 응답 데이터 확인
-3. 픽업필터를 ON 상태로 변경하고 동일한 검색 API 호출
-4. 응답 데이터 변화 확인
+### Test Case 6: 추천리랭킹 결과 노출 검증
+**Title**: 픽업필터 off일 때 추천리랭킹 결과 노출 검증  
+**Description**: 픽업필터 off일 때 추천리랭킹결과가 1위~25위까지 노출되는지 확인  
+**Preconditions**:
+- 픽업필터가 off 상태
+- 30개 이상의 테스트 가게 데이터 준비
 
-**예상 결과**:
-- OFF 상태: 배달 응답 스펙만 제공, 포장 상태는 null
-- ON 상태: 배달 응답 스펙(null) + 포장 운영상태 정보 함께 제공
-- ON 상태에서는 "배달광고 + 픽업광고"를 모두 가입한 가게만 노출
+**Steps**:
+1. 검색 화면에서 픽업필터를 off로 설정
+2. 검색 결과 확인
 
-**검증 방법**:
-- OFF 상태: shops.pickup 필드가 null인지 확인
-- ON 상태: shops.pickup 필드에 displayable, finalOperation 값이 설정되어 있는지 확인
-- ON 상태에서 노출되는 가게가 "배달광고 + 픽업광고"를 모두 가입한 가게인지 확인
+**Expected Results**:
+- 추천리랭킹결과 1위~25위까지의 가게만 노출됨
+- 26위 이상의 가게는 노출되지 않음
 
-### 테스트 케이스 6: 픽업필터 OFF 시 바로페이 조건에 따른 가게 노출 확인
-**목적**: 픽업필터 OFF 시 바로페이 조건에 따라 가게 노출이 올바르게 처리되는지 확인
+### Test Case 7: 브로스(OD) 노출 조건 검증
+**Title**: 픽업필터 off일 때 브로스(OD) 노출 조건 검증  
+**Description**: 브로스(OD) 가게가 노출 조건에 따라 올바르게 노출되는지 확인  
+**Preconditions**:
+- 픽업필터가 off 상태
+- 테스트 가게 데이터 준비 (OD, status: open, ongoing: 울트라콜, baropay: true)
 
-**전제 조건**:
-- 픽업필터가 OFF 상태
-- 다양한 바로페이 설정을 가진 가게 데이터 준비:
-  - OD only + 바로결제 true
-  - OD only + 바로결제 false
-  - MP only + 바로결제 true
-  - MP only + 바로결제 false
-  - OD + MP + 바로결제 true
-  - OD + MP + 바로결제 false
+**Test Scenario 1**:
+1. 테스트 가게의 serviceable 값을 true로 설정하고 센터ID가 일치하도록 설정
+2. 사용자 위치를 한집 배달반경(4km) 내에 설정
+3. 검색 화면에서 픽업필터를 off로 설정
+4. 검색 결과 확인
 
-**테스트 단계**:
-1. 픽업필터를 OFF 상태로 설정
-2. 검색 API 호출
-3. 각 케이스별 가게 노출 여부 확인
+**Expected Results 1**:
+- 테스트 가게가 검색 결과에 노출됨
 
-**예상 결과**:
-- OD only + 바로결제 true: 노출됨
-- OD only + 바로결제 false: 미노출
-- MP only + 바로결제 true: 노출됨
-- MP only + 바로결제 false: 노출됨
-- OD + MP + 바로결제 true: 노출됨
-- OD + MP + 바로결제 false: 노출됨
+**Test Scenario 2**:
+1. 테스트 가게의 serviceable 값을 false로 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-**검증 방법**:
-- 각 케이스별 가게의 displayable 값이 예상 결과와 일치하는지 확인
+**Expected Results 2**:
+- 테스트 가게가 검색 결과에 노출되지 않음
 
-## 결론
+**Test Scenario 3**:
+1. 테스트 가게의 serviceable 값을 true로 설정하고 센터ID가 일치하지 않도록 설정
+2. 검색 화면에서 픽업필터를 off로 설정
+3. 검색 결과 확인
 
-픽업필터 OFF 시에는 기존 배달탭의 노출 정책을 따르며, 배달 응답 스펙만 제공하고 포장 상태는 null로 처리됩니다. 가게 노출 및 운영 상태는 "baemin", "baeminOne", "stod"의 displayable 및 finalOperation 값을 기준으로 판단하며, 바로페이 조건에 따라 가게 노출 여부가 결정됩니다.
+**Expected Results 3**:
+- 테스트 가게가 검색 결과에 노출되지 않음
 
-위 테스트 케이스들을 통해 픽업필터 OFF 시의 동작을 검증하고, 기존 배달탭 노출 정책과의 일관성을 확인할 수 있습니다. 또한 픽업필터 ON/OFF 전환 시 응답 스펙의 변화를 확인하여 시스템이 올바르게 동작하는지 검증할 수 있습니다.
+**Test Scenario 4**:
+1. 테스트 가게의 serviceable 값을 true로 설정하고 센터ID가 일치하도록 설정
+2. 사용자 위치를 한집 배달반경(4km) 밖에 설정
+3. 검색 화면에서 픽업필터를 off로 설정
+4. 검색 결과 확인
+
+**Expected Results 4**:
+- 테스트 가게가 검색 결과에 노출되지 않음
+
+### Test Case 8: CPC 광고 미노출 검증
+**Title**: 픽업필터 on일 때 CPC 광고 미노출 검증  
+**Description**: 픽업필터가 on일 때 CPC 광고가 노출되지 않는지 확인 (비교를 위한 테스트)  
+**Preconditions**:
+- CPC 광고가 설정된 테스트 가게 데이터 준비
+
+**Test Scenario 1**:
+1. 검색 화면에서 픽업필터를 off로 설정
+2. 검색 결과 확인
+
+**Expected Results 1**:
+- CPC 광고가 검색 결과에 노출됨
+
+**Test Scenario 2**:
+1. 검색 화면에서 픽업필터를 on으로 설정
+2. 검색 결과 확인
+
+**Expected Results 2**:
+- CPC 광고가 검색 결과에 노출되지 않음
+
+이상의 테스트 케이스는 픽업필터 off일시의 기능을 검증하기 위한 것입니다. 각 테스트 케이스는 픽업필터 off일 때의 노출 정책, 운영 상태, 추천리랭킹 결과, 브로스(OD) 노출 조건 등을 검증합니다.
+
+### Reference
+1. [searchplatform-[Phase1] 4월8일 오픈타겟 검색지면 포장 대응-270625-100949.pdf](https://d3ccvlp2e9rt0m.cloudfront.net/docs/searchplatform-%5BPhase1%5D%204%E1%84%8B%E1%85%AF%E1%86%AF8%E1%84%8B%E1%85%B5%E1%86%AF%20%E1%84%8B%E1%85%A9%E1%84%91%E1%85%B3%E1%86%AB%E1%84%90%E1%85%A1%E1%84%80%E1%85%A6%E1%86%BA%20%E1%84%80%E1%85%A5%E1%86%B7%E1%84%89%E1%85%A2%E1%86%A8%E1%84%8C%E1%85%B5%E1%84%86%E1%85%A7%E1%86%AB%20%E1%84%91%E1%85%A9%E1%84%8C%E1%85%A1%E1%86%BC%20%E1%84%83%E1%85%A2%E1%84%8B%E1%85%B3%E1%86%BC-270625-100949.pdf), # 픽업필터 off일시 가게노출정책 (기존 배달탭 노출정책을 따름)* 메뉴존재여부: 주문가능한 상태의 메뉴가 하나라도 매칭이되면 메뉴가 있다고 봄* finalOperation: true → 가게 운영중/준비중을 판단 (false: 가게준비중)* baropayLive (바로페이라이브): true (= 주문가능시스템 Order Availability Sy......
+2. [searchplatform-[Phase1] 4월8일 오픈타겟 검색지면 포장 대응-270625-100949.pdf](https://d3ccvlp2e9rt0m.cloudfront.net/docs/searchplatform-%5BPhase1%5D%204%E1%84%8B%E1%85%AF%E1%86%AF8%E1%84%8B%E1%85%B5%E1%86%AF%20%E1%84%8B%E1%85%A9%E1%84%91%E1%85%B3%E1%86%AB%E1%84%90%E1%85%A1%E1%84%80%E1%85%A6%E1%86%BA%20%E1%84%80%E1%85%A5%E1%86%B7%E1%84%89%E1%85%A2%E1%86%A8%E1%84%8C%E1%85%B5%E1%84%86%E1%85%A7%E1%86%AB%20%E1%84%91%E1%85%A9%E1%84%8C%E1%85%A1%E1%86%BC%20%E1%84%83%E1%85%A2%E1%84%8B%E1%85%B3%E1%86%BC-270625-100949.pdf), # 픽업필터 정책 * 픽업필터 "Off" 일시에는 추천리랭킹결과가 1위~25위 노출됨 * 픽업필터 Off일시, 추천리랭킹결과 중 운영중 주문유형을 대상이라서 준비중이면 displayable=false로 노출 * 픽업ON일시 울트라콜 광고는 후순위에 노출된다. (MP상품개편정책적용) ## 순위 정책 1. 1순위: 픽업주문가능(활성화) + 배달광고 (배민1플러......
