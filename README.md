@@ -208,7 +208,7 @@ result = await show_streams(agent_stream)
 ### 실행 결과
 
 
-실행한 결과의 한 예는 [test_case.md](./test_case.md)와 같습니다. 이 결과의 일부는 아래와 같습니다.
+실행한 결과의 한 예는 [9_2_test_case.md](./9_2_test_case.md)와 같습니다. 이 결과의 일부는 아래와 같습니다.
 
 <img width="651" height="780" alt="image" src="https://github.com/user-attachments/assets/32e1e792-2e4b-49da-9c1c-09bcf3265f49" />
 
