@@ -143,6 +143,35 @@ with mcp_manager.get_active_clients(mcp_servers) as _:
         f.write(result)
 ```
 
+### Strands Tool로 Knowledge Base 활용하기
+
+Strands의 retrive를 이용해 Knolwledge Base를 이용해 구성한 RAG로 부터 필요한 문서를 조회할 수 있습니다. 상세한 코드는 [memory_loader.py](https://github.com/kyopark2014/woo-project/blob/main/memory_loader.py)을 참조하기 바랍니다.
+
+```python
+from strands_tools import retrieve
+results = agent.tool.retrieve(
+    text=query,
+    numberOfResults=5,
+    score=0.2,
+    knowledgeBaseId="YVYYTSJWDA",
+    region="us-west-2"
+)
+
+text = ""
+if "content" in results:
+    content = results.get('content')
+    for item in content:
+        if "text" in item:
+            text = item.get('text')            
+            logger.info(f"text: {text}")
+
+prompt = f"Question: 아래의 context를 참조하여, {query}를 test하기 위한 test case를 작성해주세요.\n\n<context>{text}</context>"
+logger.info(f"prompt: {prompt}")
+
+agent_stream = agent.stream_async(prompt)
+result = await show_streams(agent_stream)
+```
+
 ## 실행 준비
 
 ### 환경 준비
