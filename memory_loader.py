@@ -194,12 +194,10 @@ async def loader():
     # create agent
     agent = create_agent(system_prompt=None)
 
-    prompt = f"KnowledgeBase를 이용해 {query}에 대한 정보를 조회하고, test하기 위한 test case를 작성해주세요."
-
     # memory
     # results = agent.tool.memory(
     #     action="retrieve",
-    #     query=prompt,
+    #     query=query,
     #     min_score=0.2,
     #     max_results=5,
     #     region="us-west-2",
@@ -229,7 +227,7 @@ async def loader():
                 text = item.get('text')            
                 logger.info(f"text: {text}")
 
-    prompt = f"Question: 아래의 context를 참조하여, {query}를 test하기 위한 test case를 작성해주세요.\n\nContext: {text}"
+    prompt = f"Question: 아래의 context를 참조하여, {query}를 test하기 위한 test case를 작성해주세요.\n\n<context>{text}</context>"
     logger.info(f"prompt: {prompt}")
 
     agent_stream = agent.stream_async(prompt)
