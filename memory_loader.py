@@ -75,17 +75,6 @@ def create_agent(system_prompt):
     
     return agent
 
-def get_tool_list(tools):
-    tool_list = []
-    for tool in tools:
-        if hasattr(tool, 'tool_name'):  # MCP tool
-            tool_list.append(tool.tool_name)
-                
-        if str(tool).startswith("<module 'strands_tools."):   
-            module_name = str(tool).split("'")[1].split('.')[-1]
-            tool_list.append(module_name)
-    return tool_list
-
 def get_tool_info(tool_name, tool_content):
     tool_references = []    
     urls = []
