@@ -5,7 +5,6 @@ import os
 import asyncio
 import contextlib
 import utils
-import knowledge_base
 import boto3
 
 from typing import Dict, List, Optional
