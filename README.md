@@ -213,6 +213,10 @@ Knowledge Base에서 문서를 활용하기 위해서는 S3에 문서 등록 및
 <img width="1533" height="287" alt="noname" src="https://github.com/user-attachments/assets/2edd3b6b-dbce-4784-b640-139fa84cc223" />
 
 
+### Google Workspace
+
+[google_workspace.md](https://github.com/kyopark2014/woo-project/blob/main/google_workspace.md)에서는 Google Docs등을 활용하기 위해 google workspace를 MCP로 등록하는 방법에 대해 설명합니다.
+
 ### Code 실행하기
 
 [code-executor.md](https://github.com/kyopark2014/woo-project/blob/main/code-executor.md)에서는 AgentCore의 code interpreter를 이용해 code를 실행하는 것을 설명합니다.
