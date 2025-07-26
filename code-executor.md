@@ -1,4 +1,4 @@
-# Code Executior
+# Code Executor
 
 여기에서는 AgentCore의 Code Executor를 이용한 Code 실행에 대해 설명합니다. 상세한 코드는 [code_executor.py](./code_executor.py)을 참조합니다.
 
