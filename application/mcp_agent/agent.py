@@ -24,6 +24,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("mcp-basic")
 
+google_mcp_client = knowledge_base_mcp_client = None
+
 index = 0
 def add_notification(containers, message):
     global index
@@ -112,89 +114,62 @@ conversation_manager = SlidingWindowConversationManager(
     window_size=10,  
 )
 agent = None
-mcp_client = None
+
+def create_mcp_client(mcp_server_name: str):
+    config = load_mcp_config()
+    mcp_servers = config["mcpServers"]
+    
+    mcp_client = None
+    for server_name, server_config in mcp_servers.items():
+        logger.info(f"server_name: {server_name}")
+        logger.info(f"server_config: {server_config}")   
+
+        env = server_config["env"] if "env" in server_config else None
+
+        if server_name == mcp_server_name:
+            mcp_client = MCPClient(lambda: stdio_client(
+                StdioServerParameters(
+                    command=server_config["command"], 
+                    args=server_config["args"], 
+                    env=env
+                )
+            ))
+            break
+    
+    return mcp_client
 
 def initialize_agent():
     """Initialize the global agent with MCP client"""
-    global agent, mcp_client
-    
-    if agent is None:
-        # Create MCP client
-        mcp_client = create_google_mcp_client()
+    knowledge_base_mcp_client = create_mcp_client("knowledge_base")
+    google_mcp_client = create_mcp_client("google_workspace")
         
-        # Create agent within MCP client context manager
-        with mcp_client as client:
-            agent, tool_list = create_agent(system_prompt=None, historyMode=True, client=client)
-    
-    return agent, tool_list
+    # Create agent within MCP client context manager
+    with knowledge_base_mcp_client, google_mcp_client:
+        mcp_tools = knowledge_base_mcp_client.list_tools_sync()
+        mcp_tools.extend(google_mcp_client.list_tools_sync())
+        logger.info(f"mcp_tools: {mcp_tools}")
+        
+        tools = []
+        tools.extend(mcp_tools)
 
-def create_filtered_mcp_tools(client):
-    """Create MCP tools with parameter filtering"""
-    from strands.tools.mcp import MCPAgentTool
+        tool_list = get_tool_list(tools)
+        logger.info(f"tools loaded: {tool_list}")
     
-    original_tools = client.list_tools_sync()
-    filtered_tools = []
-    
-    for tool in original_tools:
-        if hasattr(tool, 'tool') and hasattr(tool.tool, 'name'):
-            # Create a wrapper that filters parameters
-            original_call = tool.call_async
-            
-            async def filtered_call(tool_use, invocation_state):
-                # Filter out problematic parameters
-                if hasattr(tool_use, 'input') and isinstance(tool_use.input, dict):
-                    filtered_input = filter_mcp_parameters(tool.tool.name, tool_use.input)
-                    # Create a new tool_use with filtered input
-                    tool_use.input = filtered_input
-                
-                return await original_call(tool_use, invocation_state)
-            
-            # Replace the call method
-            tool.call_async = filtered_call
-            filtered_tools.append(tool)
-        else:
-            filtered_tools.append(tool)
-    
-    return filtered_tools
-
-def create_agent(system_prompt, historyMode, client):    
-    config = load_mcp_config()
-    logger.info(f"config: {config}")
-    
-    # Use filtered MCP tools
-    google_tools = create_filtered_mcp_tools(client)
-
-    tools = [retrieve] + google_tools
-    
-    tool_list = get_tool_list(google_tools)
-    logger.info(f"Google Workspace tools loaded: {len(tool_list)} tools")
-    logger.info(f"Tool categories: Gmail({len([t for t in tool_list if 'gmail' in t.lower()])}), Drive({len([t for t in tool_list if 'drive' in t.lower()])}), Calendar({len([t for t in tool_list if 'event' in t.lower() or 'calendar' in t.lower()])}), Docs({len([t for t in tool_list if 'doc' in t.lower()])}), Sheets({len([t for t in tool_list if 'sheet' in t.lower() or 'spreadsheet' in t.lower()])}), Chat({len([t for t in tool_list if 'chat' in t.lower() or 'message' in t.lower()])}), Forms({len([t for t in tool_list if 'form' in t.lower()])}), Slides({len([t for t in tool_list if 'presentation' in t.lower() or 'slide' in t.lower()])}), Tasks({len([t for t in tool_list if 'task' in t.lower()])})")    
-    
-    # system prompt
-    if system_prompt is None:
         system_prompt = (
-            "당신의 이름은 서연이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
+            "당신의 이름은 현민이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
             "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다." 
-            "모르는 질문을 받으면 솔직히 모른다고 말합니다."            
+            "모르는 질문을 받으면 솔직히 모른다고 말합니다."
         )
+        model = get_model()
 
-    model = get_model()
-
-    if historyMode:
         agent = Agent(
             model=model,
             system_prompt=system_prompt,
             tools=tools,
             conversation_manager=conversation_manager
         )
-    else:
-        agent = Agent(
-            model=model,
-            system_prompt=system_prompt,
-            tools=tools
-        )
-
-    return agent, tool_list
+    
+    return agent, google_mcp_client, knowledge_base_mcp_client, tool_list
 
 def get_tool_info(tool_name, tool_content):
     tool_references = []    
@@ -332,7 +307,7 @@ async def show_streams(agent_stream, containers):
             continue
         
     # get reference
-    result += get_reference(references)
+    # result += get_reference(references)
     
     return result
 
@@ -364,54 +339,23 @@ def get_tool_list(tools):
                 tool_list.append(str(tool))
     return tool_list
 
-def create_google_mcp_client():
-    config = load_mcp_config()
-    mcp_servers = config["mcpServers"]
-    
-    google_mcp_client = None
-    for server_name, server_config in mcp_servers.items():
-        logger.info(f"server_name: {server_name}")
-        logger.info(f"server_config: {server_config}")
-        if server_name == "google_workspace":
-            google_mcp_client = MCPClient(lambda: stdio_client(
-                StdioServerParameters(
-                    command=server_config["command"], 
-                    args=server_config["args"], 
-                    env=server_config["env"]
-                )
-            ))
-            break
-    
-    return google_mcp_client
-
 async def run_agent(query: str, containers):
-    global index, status_msg, agent, mcp_client
+    global index, status_msg, agent, google_mcp_client, knowledge_base_mcp_client
     index = 0
     status_msg = []
+    tool_list = []
     
     containers['status'].info(get_status_msg(f"(start"))  
 
-    # Debug: Print conversation history
-    logger.info(f"Current conversation history length: {len(conversation_manager.messages) if hasattr(conversation_manager, 'messages') else 'No messages'}")
-    if hasattr(conversation_manager, 'messages') and conversation_manager.messages:
-        logger.info(f"Last message: {conversation_manager.messages[-1] if conversation_manager.messages else 'None'}")
-
     # Initialize agent if not exists
     if agent is None:
-        agent, tool_list = initialize_agent()
+        agent, google_mcp_client, knowledge_base_mcp_client, tool_list = initialize_agent()
 
-        if containers is not None and tool_list:
-            containers['tools'].info(f"tool_list: {tool_list}")
+    if containers is not None and tool_list:
+        containers['tools'].info(f"tool_list: {tool_list}")
     
     # Use the global agent within MCP client context manager
-    with mcp_client as client:
-        # Instead of creating a new agent, reuse the global agent but ensure MCP client is active
-        if agent is not None:
-            # Update the agent's tools with the active client
-            google_tools = client.list_tools_sync()
-            tools = [retrieve] + google_tools
-            agent.tools = tools
-        
+    with google_mcp_client, knowledge_base_mcp_client:
         agent_stream = agent.stream_async(query)
         result = await show_streams(agent_stream, containers)
 

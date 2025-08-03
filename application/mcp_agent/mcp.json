@@ -1,10 +1,12 @@
 {
     "mcpServers": {
-        "knowledge_base_lambda": {
+        "knowledge_base": {
             "command": "python",
-            "args": [
-                "mcp_server_lambda_knowledge_base.py"
-            ]
+            "args": ["application/mcp_agent/mcp_server_retrieve.py"]
+        },
+        "repl_coder": {
+            "command": "python",
+            "args": ["application/mcp_agent/mcp_server_repl_coder.py"]
         },
         "awslabs.aws-documentation-mcp-server": {
             "command": "uvx",
