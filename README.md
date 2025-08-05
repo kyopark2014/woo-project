@@ -250,6 +250,43 @@ result = await show_streams(agent_stream)
 
 <img width="651" height="780" alt="image" src="https://github.com/user-attachments/assets/32e1e792-2e4b-49da-9c1c-09bcf3265f49" />
 
+
+
+## QA Agent의 결과 응답시 Reflection의 응용
+
+QA Agent가 수행한 workflow의 결과를 보고, 사용자가 추가 요구사항을 반영하고자 하다면 Reflection 형태를 띄어야 합니다. 일반적으로 [Agent의 Reflection 패턴](https://github.com/langchain-ai/langgraph-reflection)은 workflow에 reflection node를 추가하는 방법으로 구성하는데, 사용자의 추가 요구사항은 한번 또는 여러번이 될 수 있고, 전혀 없을 수도 있습니다. 따라서 이러한 사용자 형태를 고려하기 위하여 Agent가 QA Agent를 하나의 Tool로 가지는 구조를 고려할 수 있습니다. 
+
+[mcp agent](./application/mcp_agent/agent.py)에서는 MCP로 QA Agent을 tool로 활용합니다. 이를 위해 먼저 [mcp_server_qa_agent.py](./application/mcp_server_qa_agent.py)에서 아래와 같이 
+
+
+[QA agent](./application/qa_agent/agent.py)에서 생성한 결과를 아래와 같이 "qa_test_cases.md"로 저장합니다.
+
+```python
+with open("qa_test_cases.md", "w") as f:
+    f.write(result)
+    f.close()
+```
+
+
+
+```python
+@mcp.tool()
+async def generate_test_cases(subject: str) -> list:
+    """
+    Generate test cases for given requirements.
+    subject: the subject to generate test cases
+    return: the test cases
+    """
+    logger.info(f"subject: {subject}")
+
+    result = await agent.run_agent(subject, containers=None)
+    logger.info(f"result: {result}")
+    return result
+```
+
+
+
+
 ## Reference
 
 [Strands Agents와 오픈 소스 AI 에이전트 SDK 살펴보기](https://aws.amazon.com/ko/blogs/tech/introducing-strands-agents-an-open-source-ai-agents-sdk/)
