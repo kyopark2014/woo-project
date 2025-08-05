@@ -254,7 +254,7 @@ result = await show_streams(agent_stream)
 
 ## QA Agent의 결과 응답시 Reflection
 
-QA Agent가 수행한 workflow의 결과를 보고, 사용자가 추가 요구사항을 반영하고자 하다면 Reflection 형태를 띄어야 합니다. 일반적으로 [Agent의 Reflection 패턴](https://github.com/langchain-ai/langgraph-reflection)은 workflow에 reflection node를 추가하는 방법으로 구성하는데, 사용자의 추가 요구사항은 한번 또는 여러번이 될 수 있고, 전혀 없을 수도 있습니다. 따라서 이러한 사용자 형태를 고려하기 위하여 QA Agent의 결과를 [qa_test_cases.json](./qa_test_cases.json)로 저장한 후에 Reflection agent가 이를 로딩하여 메시지로 관리합니다. 
+QA Agent가 수행한 workflow의 결과를 보고, 사용자가 추가 요구사항을 반영하고자 하다면 Reflection 형태를 띄어야 합니다. 일반적으로 [Agent의 Reflection 패턴](https://github.com/langchain-ai/langgraph-reflection)은 workflow에 reflection node를 추가하는 방법으로 구성하는데, 사용자의 추가 요구사항은 한번 또는 여러번이 될 수 있고, 전혀 없을 수도 있습니다. 따라서 이러한 사용자 형태를 고려하기 위하여 QA Agent의 결과를 [qa_test_cases.json](./qa_test_cases.json)로 저장한 후에 Reflection agent가 이를 로딩하여 대화 형태로 reflection을 반영합니다.
 
 [QA agent](./application/qa_agent/agent.py)에서 생성한 결과를 아래와 같이 "qa_test_cases.md"로 저장합니다.
 
