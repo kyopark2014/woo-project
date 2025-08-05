@@ -11,6 +11,7 @@ from strands.models import BedrockModel
 from botocore.config import Config
 from strands_tools import memory, retrieve
 from strands.agent.conversation_manager import SlidingWindowConversationManager
+from typing import Dict, Optional, Any
 
 logging.basicConfig(
     level=logging.INFO,  # Default to INFO level
@@ -228,7 +229,7 @@ async def show_streams(agent_stream, containers):
     
     return result
 
-async def run_agent(query: str, system_prompt: str, historyMode: bool, containers):
+async def run_agent(query: str, system_prompt: Optional[str], historyMode: Optional[bool], containers: Optional[Dict[str, Any]]):
     global index, status_msg
     index = 0
     status_msg = []

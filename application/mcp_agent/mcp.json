@@ -15,6 +15,10 @@
                 "FASTMCP_LOG_LEVEL": "ERROR"
             }
         },
+        "qa_agent": {
+            "command": "python",
+            "args": ["application/mcp_server_qa_agent.py"]
+        },
         "google_workspace": {
             "command": "uvx",
             "args": ["workspace-mcp"],

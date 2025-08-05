@@ -14,6 +14,7 @@ from strands_tools import memory, retrieve
 from strands.agent.conversation_manager import SlidingWindowConversationManager
 from strands.tools.mcp import MCPClient
 from mcp import stdio_client, StdioServerParameters
+from typing import Dict, Optional, Any
 
 logging.basicConfig(
     level=logging.INFO,  # Default to INFO level
@@ -35,7 +36,8 @@ def add_notification(containers, message):
 
 def add_response(containers, message):
     global index
-    containers['notification'][index].markdown(message)
+    if containers is not None:
+        containers['notification'][index].markdown(message)
     index += 1
     
 status_msg = []
@@ -114,6 +116,9 @@ conversation_manager = SlidingWindowConversationManager(
     window_size=10,  
 )
 agent = None
+google_mcp_client = None
+knowledge_base_mcp_client = None
+qa_agent_mcp_client = None
 
 def create_mcp_client(mcp_server_name: str):
     config = load_mcp_config()
@@ -142,11 +147,13 @@ def initialize_agent():
     """Initialize the global agent with MCP client"""
     knowledge_base_mcp_client = create_mcp_client("knowledge_base")
     google_mcp_client = create_mcp_client("google_workspace")
+    qa_agent_mcp_client = create_mcp_client("qa_agent")
         
     # Create agent within MCP client context manager
-    with knowledge_base_mcp_client, google_mcp_client:
+    with knowledge_base_mcp_client, google_mcp_client, qa_agent_mcp_client:
         mcp_tools = knowledge_base_mcp_client.list_tools_sync()
         mcp_tools.extend(google_mcp_client.list_tools_sync())
+        mcp_tools.extend(qa_agent_mcp_client.list_tools_sync())
         logger.info(f"mcp_tools: {mcp_tools}")
         
         tools = []
@@ -169,7 +176,7 @@ def initialize_agent():
             conversation_manager=conversation_manager
         )
     
-    return agent, google_mcp_client, knowledge_base_mcp_client, tool_list
+    return agent, google_mcp_client, knowledge_base_mcp_client, qa_agent_mcp_client, tool_list
 
 def get_tool_info(tool_name, tool_content):
     tool_references = []    
@@ -339,28 +346,30 @@ def get_tool_list(tools):
                 tool_list.append(str(tool))
     return tool_list
 
-async def run_agent(query: str, containers):
-    global index, status_msg, agent, google_mcp_client, knowledge_base_mcp_client
+async def run_agent(query: str, containers: Optional[Dict[str, Any]] = None):
+    global index, status_msg, agent, google_mcp_client, knowledge_base_mcp_client, qa_agent_mcp_client
     index = 0
     status_msg = []
     tool_list = []
     
-    containers['status'].info(get_status_msg(f"(start"))  
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"(start"))  
 
     # Initialize agent if not exists
     if agent is None:
-        agent, google_mcp_client, knowledge_base_mcp_client, tool_list = initialize_agent()
+        agent, google_mcp_client, knowledge_base_mcp_client, qa_agent_mcp_client, tool_list = initialize_agent()
 
     if containers is not None and tool_list:
         containers['tools'].info(f"tool_list: {tool_list}")
     
     # Use the global agent within MCP client context manager
-    with google_mcp_client, knowledge_base_mcp_client:
+    with google_mcp_client, knowledge_base_mcp_client, qa_agent_mcp_client:
         agent_stream = agent.stream_async(query)
         result = await show_streams(agent_stream, containers)
 
     logger.info(f"result: {result}")
 
-    containers['status'].info(get_status_msg(f"end)"))
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"end)"))
 
     return result
