@@ -252,40 +252,73 @@ result = await show_streams(agent_stream)
 
 
 
-## QA Agent의 결과 응답시 Reflection의 응용
+## QA Agent의 결과 응답시 Reflection
 
-QA Agent가 수행한 workflow의 결과를 보고, 사용자가 추가 요구사항을 반영하고자 하다면 Reflection 형태를 띄어야 합니다. 일반적으로 [Agent의 Reflection 패턴](https://github.com/langchain-ai/langgraph-reflection)은 workflow에 reflection node를 추가하는 방법으로 구성하는데, 사용자의 추가 요구사항은 한번 또는 여러번이 될 수 있고, 전혀 없을 수도 있습니다. 따라서 이러한 사용자 형태를 고려하기 위하여 Agent가 QA Agent를 하나의 Tool로 가지는 구조를 고려할 수 있습니다. 
-
-[mcp agent](./application/mcp_agent/agent.py)에서는 MCP로 QA Agent을 tool로 활용합니다. 이를 위해 먼저 [mcp_server_qa_agent.py](./application/mcp_server_qa_agent.py)에서 아래와 같이 
-
+QA Agent가 수행한 workflow의 결과를 보고, 사용자가 추가 요구사항을 반영하고자 하다면 Reflection 형태를 띄어야 합니다. 일반적으로 [Agent의 Reflection 패턴](https://github.com/langchain-ai/langgraph-reflection)은 workflow에 reflection node를 추가하는 방법으로 구성하는데, 사용자의 추가 요구사항은 한번 또는 여러번이 될 수 있고, 전혀 없을 수도 있습니다. 따라서 이러한 사용자 형태를 고려하기 위하여 QA Agent의 결과를 [qa_test_cases.json](./qa_test_cases.json)로 저장한 후에 Reflection agent가 이를 로딩하여 메시지로 관리합니다. 
 
 [QA agent](./application/qa_agent/agent.py)에서 생성한 결과를 아래와 같이 "qa_test_cases.md"로 저장합니다.
 
 ```python
-with open("qa_test_cases.md", "w") as f:
+with open("qa_test_cases.json", "w") as f:
+    f.write(json.dumps({
+        "subject": query,
+        "draft": result
+    }, ensure_ascii=False, indent=2))
+    f.close()
+```
+
+[Reflection agent](./application/reflection_agent/agent.py)에서는 아래와 같이 messages를 준비하여 draft를 추가합니다.
+
+```python
+messages = []
+
+if len(messages) == 0:        
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    qa_test_cases_path = os.path.join(current_dir, "..", "..", "qa_test_cases.json")
+    
+    with open(qa_test_cases_path, "r") as f:
+        data = json.load(f)
+        subject = data["subject"]
+        draft = data["draft"]
+        f.close()
+
+        messages.append({"role": "user", "content": [{"text": subject}]})
+        messages.append({"role": "assistant", "content": [{"text": draft}]})
+```
+
+이후 아래와 같이 reflection agent를 생성하여 결과를 얻습니다. 최종 결과는 [updated_qa_test_cases.md](./updated_qa_test_cases.md)로 저장합니다.
+
+```python
+reflection_agent = create_reflection_agent(messages)
+
+agent_stream = reflection_agent.stream_async(query)
+result = await show_streams(agent_stream, containers)
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+output_path = os.path.join(current_dir, "..", "..", "updated_qa_test_cases.md")
+
+with open(output_path, "w") as f:
     f.write(result)
     f.close()
 ```
 
-
+여기서 정의한 reflection agent는 아래와 같습니다.
 
 ```python
-@mcp.tool()
-async def generate_test_cases(subject: str) -> list:
-    """
-    Generate test cases for given requirements.
-    subject: the subject to generate test cases
-    return: the test cases
-    """
-    logger.info(f"subject: {subject}")
+def create_reflection_agent(messages):
+    system_prompt = (
+        "당신은 숙련된 QA 엔지니어입니다."
+    )
+    model = get_model()
 
-    result = await agent.run_agent(subject, containers=None)
-    logger.info(f"result: {result}")
-    return result
+    agent = Agent(
+        model=model,
+        system_prompt=system_prompt,
+        messages=messages
+    )
+
+    return agent
 ```
-
-
-
 
 ## Reference
 
