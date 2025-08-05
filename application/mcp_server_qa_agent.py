@@ -1,6 +1,6 @@
 import logging
 import sys
-import mcp_agent.agent as agent
+import qa_agent.agent as agent
 
 from typing import Dict, Optional, Any
 from mcp.server.fastmcp import FastMCP 
@@ -39,7 +39,7 @@ async def generate_test_cases(subject: str) -> list:
     """
     logger.info(f"subject: {subject}")
 
-    result = await agent.run_agent(subject, containers=None)
+    result = await agent.run_agent(subject)
     logger.info(f"result: {result}")
     return result
 

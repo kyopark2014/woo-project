@@ -1,0 +1,14 @@
+# 9-2 픽업필터 OFF 일시 테스트 케이스
+
+| 테스트 ID | 테스트 목적 | 테스트 데이터 | 테스트 단계 | 예상 결과 |
+|-----------|------------|--------------|------------|-----------|
+| TC-01 | 기본 노출 조건 검증 | - 픽업필터 OFF 상태<br>- 추천리랭킹 결과 1위~25위 존재 | 1. 픽업필터를 OFF로 설정<br>2. 검색 결과 확인 | - 추천리랭킹 결과 1위~25위가 노출됨<br>- 배달 응답 스펙만 제공되고 포장 상태는 null로 표시됨 |
+| TC-02 | OD only 가게 노출 조건 검증 | - 가게 A: OD only, status=open, 배민1플러스 가입, baropay=true<br>- 가게 B: OD only, status=open, 배민1플러스 가입, baropay=false<br>- 가게 C: OD only, status=closed, 배민1플러스 가입, baropay=true | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. 각 가게의 노출 여부 확인 | - 가게 A: displayable=true (노출)<br>- 가게 B: displayable=false (미노출)<br>- 가게 C: displayable=false (미노출) |
+| TC-03 | MP only 가게 노출 조건 검증 | - 가게 D: MP only, status=open, 울트라콜 가입, baropay=true<br>- 가게 E: MP only, status=open, 울트라콜 가입, baropay=false<br>- 가게 F: MP only, status=closed, 울트라콜 가입, baropay=true | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. 각 가게의 노출 여부 확인 | - 가게 D: displayable=true (노출)<br>- 가게 E: displayable=true (노출)<br>- 가게 F: displayable=false (미노출) |
+| TC-04 | OD+MP 가게 노출 조건 검증 | - 가게 G: OD+MP, status=open, 배민1플러스+울트라콜 가입, baropay=true<br>- 가게 H: OD+MP, status=open, 배민1플러스+울트라콜 가입, baropay=false | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. 각 가게의 노출 여부 확인 | - 가게 G: displayable=true (노출)<br>- 가게 H: displayable=true (노출) |
+| TC-05 | 광고 상품별 노출 조건 검증 | - 가게 I: status=open, 배민1플러스 가입, baropay=true<br>- 가게 J: status=open, 오픈리스트 가입, baropay=true<br>- 가게 K: status=open, 울트라콜 가입, baropay=true<br>- 가게 L: status=open, 파워콜 가입, baropay=true<br>- 가게 M: status=open, 광고 미가입, baropay=true | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. 각 가게의 노출 여부 확인 | - 가게 I, J, K, L: displayable=true (노출)<br>- 가게 M: displayable=false (미노출) |
+| TC-06 | finalOperation 조건 검증 | - 가게 N: displayable=true, baropayLive=true, 현재 영업시간 내<br>- 가게 O: displayable=true, baropayLive=false, 현재 영업시간 내<br>- 가게 P: displayable=true, baropayLive=true, 현재 영업시간 외<br>- 가게 Q: displayable=true, baropayLive=true, 현재 브레이크타임 | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. 각 가게의 운영 상태 확인 | - 가게 N: finalOperation=true (운영중)<br>- 가게 O: finalOperation=false (준비중)<br>- 가게 P: finalOperation=false (준비중)<br>- 가게 Q: finalOperation=false (준비중) |
+| TC-07 | 브로스(OD) 노출 조건 검증 | - 가게 R: serviceable=true, 센터ID 일치, 배달반경 내(한집 4km 이내)<br>- 가게 S: serviceable=false, 센터ID 일치, 배달반경 내<br>- 가게 T: serviceable=true, 센터ID 불일치, 배달반경 내<br>- 가게 U: serviceable=true, 센터ID 일치, 배달반경 외(5km) | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. 각 가게의 노출 여부 확인 | - 가게 R: 노출됨<br>- 가게 S: 미노출<br>- 가게 T: 미노출<br>- 가게 U: 미노출 |
+| TC-08 | 썸네일 상태 표시 검증 | - 가게 V: 배달 가능, 픽업 불가능<br>- 가게 W: 배달 불가능, 픽업 가능 | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. 각 가게의 썸네일 상태 확인 | - 가게 V: "활성화" 썸네일 노출<br>- 가게 W: "준비중" 썸네일 노출 |
+| TC-09 | 스마트메뉴 사용 여부 검증 | - 가게 X: 모든 노출 조건 충족, isUseSmartmenu=true<br>- 가게 Y: 모든 노출 조건 충족, isUseSmartmenu=false | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. 각 가게의 노출 여부 확인 | - 가게 X: 노출됨<br>- 가게 Y: 노출됨 |
+| TC-10 | CPC 광고 노출 검증 | - 픽업필터 OFF 상태<br>- CPC 광고 슬롯 존재 | 1. 픽업필터 OFF 상태에서 검색 실행<br>2. CPC 광고 슬롯 노출 여부 확인 | - CPC 광고 슬롯이 정상적으로 노출됨 |

@@ -4,6 +4,7 @@ import sys
 import os
 import qa_agent.agent as qa
 import mcp_agent.agent as mcp
+import reflection_agent.agent as reflection
 import chat
 import asyncio
 
@@ -27,6 +28,9 @@ mode_descriptions = {
     ],
     "QA Agent": [
         "주어진 질문으로 RAG를 검색하고 Test Case를 생성합니다."
+    ],
+    "Reflection Agent": [
+        "QA Agent의 결과를 업데이트 합니다."
     ]
 }
 
@@ -42,7 +46,7 @@ with st.sidebar:
     
     # radio selection
     mode = st.radio(
-        label="원하는 대화 형태를 선택하세요. ",options=["Agent", "QA Agent"], index=0
+        label="원하는 대화 형태를 선택하세요. ",options=["Agent", "QA Agent", "Reflection Agent"], index=0
     )   
     st.info(mode_descriptions[mode][0])
     
@@ -125,6 +129,14 @@ if prompt := st.chat_input("메시지를 입력하세요."):
                 }
                 #query = "9-2. 픽업필터 off일시"
                 response = asyncio.run(qa.run_agent(query=prompt, system_prompt=None, historyMode=False, containers=containers))
+
+            elif mode == 'Reflection Agent':
+                containers = {
+                    "tools": st.empty(),
+                    "status": st.empty(),
+                    "notification": [st.empty() for _ in range(500)]
+                }
+                response = asyncio.run(reflection.run_agent(query=prompt, containers=containers))
         
         st.session_state.messages.append({
             "role": "assistant", 

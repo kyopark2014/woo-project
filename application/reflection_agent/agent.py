@@ -4,6 +4,7 @@ import sys
 import qa_agent.utils as utils
 import boto3
 import re
+import os
 
 from typing import Dict, List, Optional
 from strands import Agent
@@ -93,36 +94,18 @@ conversation_manager = SlidingWindowConversationManager(
     window_size=10,  
 )
 
-def create_agent(system_prompt, query, historyMode):
-    if isKorean(query):
-        system_prompt = (
-            "당신은 숙련된 QA 엔지니어입니다."
-            "상황에 맞는 충분히 구체적인 세부 정보를 제공하세요."
-            "질문에 대한 답을 모를 경우, 솔직하게 모른다고 말하세요."
-        )
-    else:
-        system_prompt = (
-            "You are an experienced QA Engineer."
-            "Provide sufficient specific details appropriate to the situation."
-            "If you don't know the answer to a question, honestly say you don't know."
-        )
-
+def create_reflection_agent(messages):
+    system_prompt = (
+        "당신은 숙련된 QA 엔지니어입니다."
+    )
     model = get_model()
 
-    if historyMode:
-        agent = Agent(
-            model=model,
-            system_prompt=system_prompt,
-            tools=[retrieve],
-            conversation_manager=conversation_manager
-        )
-    else:
-        agent = Agent(
-            model=model,
-            system_prompt=system_prompt,
-            tools=[retrieve]
-        )
-    
+    agent = Agent(
+        model=model,
+        system_prompt=system_prompt,
+        messages=messages
+    )
+
     return agent
 
 def get_tool_info(tool_name, tool_content):
@@ -230,58 +213,50 @@ async def show_streams(agent_stream, containers):
     
     return result
 
-async def run_agent(query: str, system_prompt: Optional[str]=None, historyMode: Optional[bool]=False, containers: Optional[Dict[str, Any]]=None):
+messages = []
+async def run_agent(query: str, containers: Optional[Dict[str, Any]]=None):
     global index, status_msg
     index = 0
     status_msg = []
     
-    if containers is not None:
-        containers['status'].info(get_status_msg(f"(start"))  
+    # load qa_test_cases.md
+    if len(messages) == 0:        
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        qa_test_cases_path = os.path.join(current_dir, "..", "..", "qa_test_cases.json")
+        
+        with open(qa_test_cases_path, "r") as f:
+            data = json.load(f)
+            subject = data["subject"]
+            draft = data["draft"]
+            f.close()
 
-    # create agent
-    agent = create_agent(system_prompt, query, historyMode)
+            logger.info(f"subject: {subject}")
+            logger.info(f"draft: {draft}")
+            
+            # if containers is not None:
+            #     add_notification(containers, f"# {subject}\n\n{draft}")
 
-    # retrieve
-    if containers is not None:
-        containers['status'].info(get_status_msg(f"retrieve"))  
-    results = agent.tool.retrieve(
-        text=query,
-        numberOfResults=5,
-        score=0.2,
-        knowledgeBaseId="YVYYTSJWDA",
-        region="us-west-2"
-    )
-    text = ""
-    if "content" in results:
-        content = results.get('content')
-        for item in content:
-            if "text" in item:
-                text = item.get('text')            
-                logger.info(f"text: {text}")
-                if containers is not None:
-                    add_notification(containers, text)
+            messages.append({"role": "user", "content": [{"text": subject}]})
+            messages.append({"role": "assistant", "content": [{"text": draft}]})
 
-    # generate
-    if containers is not None:
-        containers['status'].info(get_status_msg(f"generate"))  
+    logger.info(f"messages: {messages}")
 
-    prompt = f"Question: 아래의 context를 참조하여, {query}를 test하기 위한 test case를 작성해주세요.\n\n<context>{text}</context>"
-    logger.info(f"prompt: {prompt}")
+    reflection_agent = create_reflection_agent(messages)
 
-    agent_stream = agent.stream_async(prompt)
+    agent_stream = reflection_agent.stream_async(query)
     result = await show_streams(agent_stream, containers)
 
     logger.info(f"result: {result}")
 
-    if containers is not None:
-        containers['status'].info(get_status_msg(f"end)"))
+    messages.append({"role": "user", "content": [{"text": query}]})
+    messages.append({"role": "assistant", "content": [{"text": result}]})
 
-    # save result to "qa_test_cases.json"
-    with open("qa_test_cases.json", "w") as f:
-        f.write(json.dumps({
-            "subject": query,
-            "draft": result
-        }, ensure_ascii=False, indent=2))
+    # save result to "qa_test_cases.md"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(current_dir, "..", "..", "updated_qa_test_cases.md")
+    
+    with open(output_path, "w") as f:
+        f.write(result)
         f.close()
 
     return result
