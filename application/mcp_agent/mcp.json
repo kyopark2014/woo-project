@@ -27,6 +27,13 @@
                 "GOOGLE_OAUTH_CLIENT_SECRET": "your-client-secret",
                 "OAUTHLIB_INSECURE_TRANSPORT": "1"
             }
+        },
+        "filesystem": {
+            "command": "npx",
+            "args": [
+                "@modelcontextprotocol/server-filesystem",
+                "/Users/ksdyb/Downloads/woo/rag"
+            ]
         }
     }
 }
