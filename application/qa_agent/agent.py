@@ -120,7 +120,7 @@ def create_agent(system_prompt, query, historyMode):
         agent = Agent(
             model=model,
             system_prompt=system_prompt,
-            tools=[retrieve]
+            tools=[retrieve, ]
         )
     
     return agent

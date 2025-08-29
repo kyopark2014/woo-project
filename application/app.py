@@ -29,6 +29,9 @@ mode_descriptions = {
     "QA Agent": [
         "주어진 질문으로 RAG를 검색하고 Test Case를 생성합니다."
     ],
+    "QA Agent (Multi)": [
+        "멀티 에이전트를 이용하여 주어진 질문에서 QA 항목을 추출하고 Test Case를 생성합니다."
+    ],
     "Reflection Agent": [
         "QA Agent의 결과를 업데이트 합니다."
     ]
@@ -46,7 +49,7 @@ with st.sidebar:
     
     # radio selection
     mode = st.radio(
-        label="원하는 대화 형태를 선택하세요. ",options=["Agent", "QA Agent", "Reflection Agent"], index=0
+        label="원하는 대화 형태를 선택하세요. ",options=["Agent", "QA Agent", "Reflection Agent", "QA Agent (Multi)"], index=0
     )   
     st.info(mode_descriptions[mode][0])
     
@@ -109,7 +112,8 @@ if prompt := st.chat_input("메시지를 입력하세요."):
     logger.info(f"prompt: {prompt}")
 
     with st.chat_message("assistant"):        
-        sessionState = ""            
+        sessionState = ""
+        response = ""
         
         with st.status("thinking...", expanded=True, state="running") as status:            
             if mode == 'Agent':            
@@ -137,7 +141,15 @@ if prompt := st.chat_input("메시지를 입력하세요."):
                     "notification": [st.empty() for _ in range(500)]
                 }
                 response = asyncio.run(reflection.run_agent(query=prompt, containers=containers))
-        
+
+            elif mode == 'QA Agent (Multi)':
+                containers = {
+                    "tools": st.empty(),
+                    "status": st.empty(),
+                    "notification": [st.empty() for _ in range(500)]
+                }
+                response = asyncio.run(mcp.run_multi_agent(query=prompt, containers=containers))
+                
         st.session_state.messages.append({
             "role": "assistant", 
             "content": response

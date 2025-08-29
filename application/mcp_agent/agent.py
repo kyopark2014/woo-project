@@ -141,16 +141,14 @@ def create_mcp_client(mcp_server_name: str):
     
     return mcp_client
 
-def initialize_agent():
+def initialize_agent(system_prompt=None):
     """Initialize the global agent with MCP client"""
     knowledge_base_mcp_client = create_mcp_client("knowledge_base")
-    google_mcp_client = create_mcp_client("google_workspace")
     filesystem_client = create_mcp_client("filesystem")
         
     # Create agent within MCP client context manager
     with knowledge_base_mcp_client, google_mcp_client, filesystem_client:
         mcp_tools = knowledge_base_mcp_client.list_tools_sync()
-        mcp_tools.extend(google_mcp_client.list_tools_sync())
         mcp_tools.extend(filesystem_client.list_tools_sync())
         logger.info(f"mcp_tools: {mcp_tools}")
         
@@ -160,11 +158,12 @@ def initialize_agent():
         tool_list = get_tool_list(tools)
         logger.info(f"tools loaded: {tool_list}")
     
-        system_prompt = (
-            "당신의 이름은 현민이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
-            "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다." 
-            "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-        )
+        if system_prompt is None:
+            system_prompt = (
+                "당신의 이름은 현민이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
+                "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다." 
+                "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            )
         model = get_model()
 
         agent = Agent(
@@ -174,7 +173,7 @@ def initialize_agent():
             conversation_manager=conversation_manager
         )
     
-    return agent, google_mcp_client, knowledge_base_mcp_client, filesystem_client, tool_list
+    return agent, knowledge_base_mcp_client, filesystem_client, tool_list
 
 def get_tool_info(tool_name, tool_content):
     tool_references = []    
@@ -355,7 +354,7 @@ async def run_agent(query: str, containers: Optional[Dict[str, Any]] = None):
 
     # Initialize agent if not exists
     if agent is None:
-        agent, google_mcp_client, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent()
+        agent, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent(system_prompt=None)
 
     if containers is not None and tool_list:
         containers['tools'].info(f"tool_list: {tool_list}")
@@ -371,3 +370,116 @@ async def run_agent(query: str, containers: Optional[Dict[str, Any]] = None):
         containers['status'].info(get_status_msg(f"end)"))
 
     return result
+
+async def run_multi_agent(query: str, containers: Optional[Dict[str, Any]]=None):
+    global index, status_msg
+    index = 0
+    status_msg = []
+    
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"(start"))  
+
+    # create agent
+    system_prompt = (
+        "당신은 숙련된 QA 엔지니어입니다."
+        "사용자가 전달한 파일을 로딩한 후에, 해당 문서의 API 항목만을 추출하세요."
+        "API 항목에 <item> 태그를 추가하세요."
+        "API 항목은 중복되지 않도록 추출하세요."
+    )
+
+    agent, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent(system_prompt=system_prompt)
+
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"extract_list"))  
+
+    # if containers is not None and tool_list:
+    #     containers['tools'].info(f"tool_list: {tool_list}")
+    logger.info(f"tool_list: {tool_list}")
+
+    with knowledge_base_mcp_client, filesystem_client:
+        if containers is not None:
+            add_response(containers, "## API 항목 추출 중...\n")
+        
+        agent_stream = agent.stream_async(query)
+        result = await show_streams(agent_stream, containers)
+        logger.info(f"results: {result}")
+        
+        # Extract API items from results and store in array
+        api_items = []
+        if result:
+            # Convert result to string if needed
+            results_text = str(result) if not isinstance(result, str) else result
+            logger.info(f"results_text: {results_text}")
+            
+            # Split by <item> tags and extract content            
+            # Find all <item> tags and their content, ensuring we don't include text before <item>
+            item_pattern = r'<item>([^<]*(?:<[^/][^>]*>[^<]*</[^>]*>[^<]*)*)</item>'
+            matches = re.findall(item_pattern, results_text, re.DOTALL)
+            
+            for match in matches:
+                # Clean up the content (remove extra whitespace and newlines)
+                cleaned_item = match.strip()
+                if cleaned_item:
+                    api_items.append(cleaned_item)
+        
+        logger.info(f"extracted api_items: {api_items}")
+        logger.info(f"total api items found: {len(api_items)}")
+
+    api_lists = "\n\n".join(api_items)
+
+    # save api_items to file
+    with open("api_items.txt", "w", encoding="utf-8") as f:
+        f.write(api_lists)
+    
+    if containers is not None:
+        add_response(containers, "## 추출된 항목\n" + api_lists)
+    
+    for i in range(2): # len(api_items)로 하면 전체를 추출할 수 있습니다. 편의상 3개만...
+        if containers is not None:
+            containers['status'].info(get_status_msg(f"extract_qa_details"))
+
+        if containers is not None:
+            add_notification(containers, f"{i+1}번째 API 항목에 대한 QA 항목을 추출합니다.")
+        
+        await extract_qa_details(query, i, api_items[i], containers)
+
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"end)"))
+
+    return api_lists
+
+async def extract_qa_details(query: str, qa_index:int, api_item:str, containers: Optional[Dict[str, Any]]=None):
+    global index, status_msg
+    status_msg = []
+    
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"(qa_details"))  
+
+    # create agent
+    system_prompt = (
+        "당신은 숙련된 QA 엔지니어입니다."
+        "사용자가 전달한 파일을 로딩한 후에, 다음의 <item> tag에 있는 QA 항목을 test case로 작성해주세요."
+        f"<item>{api_item}</item>" 
+        "test case는 중복되지 않도록 작성해주세요."
+        "답변은 한국어로 작성하세요."
+    )
+
+    agent, google_mcp_client, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent(system_prompt=system_prompt)
+
+    logger.info(f"tool_list: {tool_list}")
+
+    with filesystem_client:
+        if containers is not None:
+            add_response(containers, f"# QA 항목 #{qa_index+1}\n")
+        
+        agent_stream = agent.stream_async(query)
+        result = await show_streams(agent_stream, containers)
+        logger.info(f"qa_detail: {result}")
+
+    # save result to file
+    with open(f"qa_details_{qa_index}.txt", "w", encoding="utf-8") as f:
+        f.write(result)
+    
+    return result
+
+    
