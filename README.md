@@ -222,6 +222,9 @@ Knowledge Base에서 문서를 활용하기 위해서는 S3에 문서 등록 및
 [code-executor.md](./code-executor.md)에서는 AgentCore의 code interpreter를 이용해 code를 실행하는 것을 설명합니다.
 
 
+
+
+
 ### 실행하기 
 
 Terminal을 열고 github 주소로 이동한 후에 아래와 같이 실행합니다.
@@ -319,6 +322,72 @@ def create_reflection_agent(messages):
 
     return agent
 ```
+
+## QA Multi Agent
+
+주어진 문서에서 API 리스트를 추출한 후에 각 API에 대한 QA 항목을 추출합니다. 세부 코드는 [mcp_agent/agent.py](./application/mcp_agent/agent.py)을 참조합니다.
+
+아래와 같이 run_multi_agent은 작업할 파일명을 입력(query)로 받습니다. Agent 생성시 API를 item 별로 추출하도록 prompt로 요청합니다. Agent가 추출한 item들을 모아서 api list를 생성하고, 이를 하나씩 extract_qa_details을 이용해 QA 항목을 추출합니다. 
+
+```python
+async def run_multi_agent(query: str, containers: Optional[Dict[str, Any]]=None):
+    system_prompt = (
+        "당신은 숙련된 QA 엔지니어입니다."
+        "사용자가 전달한 파일을 로딩한 후에, 해당 문서의 API 항목만을 추출하세요."
+        "API 항목에 <item> 태그를 추가하세요."
+        "API 항목은 중복되지 않도록 추출하세요."
+    )
+    agent, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent(system_prompt=system_prompt)
+
+    with knowledge_base_mcp_client, filesystem_client:
+        agent_stream = agent.stream_async(query)
+        result = await show_streams(agent_stream, containers)        
+        api_items = []
+        if result:
+            item_pattern = r'<item>([^<]*(?:<[^/][^>]*>[^<]*</[^>]*>[^<]*)*)</item>'
+            matches = re.findall(item_pattern, results_text, re.DOTALL)            
+            for match in matches:
+                cleaned_item = match.strip()
+                if cleaned_item:
+                    api_items.append(cleaned_item)
+        
+    api_lists = "\n\n".join(api_items)
+
+    # save api_items to file
+    with open("api_items.txt", "w", encoding="utf-8") as f:
+        f.write(api_lists)
+    
+    for i in range(len(api_items)): 
+        await extract_qa_details(query, i, api_items[i], containers)
+
+    return api_lists
+```
+
+아래와 같이 extract_qa_details은 QA 항목을 추출합니다. API의 내용을 <item> tag안에 넣어서 agent에 전달하면 API에 대해 좀더 명확하게 agent에 전달할 수 있습니다. 또한, 이때 적절한 결과 포맷을 추가하면, 결과의 정확도를 높일 수 있습니다. 
+
+```
+async def extract_qa_details(query: str, qa_index:int, api_item:str, containers: Optional[Dict[str, Any]]=None):
+    system_prompt = (
+        "당신은 숙련된 QA 엔지니어입니다."
+        "사용자가 전달한 파일을 로딩한 후에, 다음의 <item> tag에 있는 QA 항목을 test case로 작성해주세요."
+        f"<item>{api_item}</item>" 
+        "test case는 중복되지 않도록 작성해주세요."
+        "답변은 한국어로 작성하세요."
+    )
+
+    agent, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent(system_prompt=system_prompt)
+
+    with filesystem_client:
+        agent_stream = agent.stream_async(query)
+        result = await show_streams(agent_stream, containers)
+
+    # save result to file
+    with open(f"qa_details_{qa_index}.txt", "w", encoding="utf-8") as f:
+        f.write(result)
+    
+    return result
+```
+    
 
 ## Reference
 
