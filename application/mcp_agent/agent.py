@@ -114,7 +114,6 @@ conversation_manager = SlidingWindowConversationManager(
     window_size=10,  
 )
 agent = None
-google_mcp_client = None
 knowledge_base_mcp_client = None
 filesystem_client = None
 
@@ -147,7 +146,7 @@ def initialize_agent(system_prompt=None):
     filesystem_client = create_mcp_client("filesystem")
         
     # Create agent within MCP client context manager
-    with knowledge_base_mcp_client, google_mcp_client, filesystem_client:
+    with knowledge_base_mcp_client, filesystem_client:
         mcp_tools = knowledge_base_mcp_client.list_tools_sync()
         mcp_tools.extend(filesystem_client.list_tools_sync())
         logger.info(f"mcp_tools: {mcp_tools}")
@@ -344,7 +343,7 @@ def get_tool_list(tools):
     return tool_list
 
 async def run_agent(query: str, containers: Optional[Dict[str, Any]] = None):
-    global index, status_msg, agent, google_mcp_client, knowledge_base_mcp_client, filesystem_client
+    global index, status_msg, agent, knowledge_base_mcp_client, filesystem_client
     index = 0
     status_msg = []
     tool_list = []
@@ -464,7 +463,7 @@ async def extract_qa_details(query: str, qa_index:int, api_item:str, containers:
         "답변은 한국어로 작성하세요."
     )
 
-    agent, google_mcp_client, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent(system_prompt=system_prompt)
+    agent, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent(system_prompt=system_prompt)
 
     logger.info(f"tool_list: {tool_list}")
 

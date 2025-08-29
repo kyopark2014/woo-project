@@ -1,0 +1,135 @@
+이제 파일 내용을 확인했으니, 요청하신 QA 테스트 케이스를 작성하겠습니다. 요청하신 내용은 "거래 조회 V2 (공통API)"에 대한 테스트 케이스로, 정산기준조정금액에 '배민 부담 가게배달팁' 코드(BARO_WOOWABROS_CHARGE_DELIVERY_TIP)를 추가하는 작업에 대한 것입니다.
+
+# 거래 조회 V2 (공통API) 테스트 케이스
+
+## 테스트 개요
+- **테스트 대상**: 거래 조회 V2 API
+- **End Point**: /common-api/v2/customers/{customerNo}/tx-histories
+- **기능**: 거래처번호에 따른 거래 내역 조회
+- **작업사항**: 정산기준조정금액에 '배민 부담 가게배달팁' 코드(BARO_WOOWABROS_CHARGE_DELIVERY_TIP) 추가
+
+## 테스트 케이스
+
+### 테스트 케이스 1: 배민 부담 가게배달팁이 없는 경우 API 응답 확인
+- **목적**: 배민 부담 가게배달팁이 없는 거래에서 API가 정상적으로 응답하는지 확인
+- **선행 조건**: 
+  - 배민 부담 가게배달팁이 없는 거래 데이터가 존재함
+  - 거래처번호가 유효함
+- **테스트 단계**:
+  1. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX
+  2. 응답 확인
+- **예상 결과**:
+  - HTTP 상태 코드: 200 OK
+  - content[].adjustAmounts 배열이 비어있거나, BARO_WOOWABROS_CHARGE_DELIVERY_TIP 코드가 없음
+  - content[].transactionAmounts에 ORDER_AMOUNT(주문금액)와 BARO_DELIVERYTIP(가게배달팁) 항목이 정상적으로 포함됨
+- **실제 결과**: (테스트 후 기록)
+
+### 테스트 케이스 2: 배민 부담 가게배달팁이 있는 경우 API 응답 확인
+- **목적**: 배민 부담 가게배달팁이 있는 거래에서 API가 정상적으로 응답하는지 확인
+- **선행 조건**: 
+  - 배민 부담 가게배달팁이 있는 거래 데이터가 존재함
+  - 거래처번호가 유효함
+- **테스트 단계**:
+  1. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX
+  2. 응답 확인
+- **예상 결과**:
+  - HTTP 상태 코드: 200 OK
+  - content[].adjustAmounts 배열에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP 코드가 포함됨
+  - BARO_WOOWABROS_CHARGE_DELIVERY_TIP 항목의 amount, supplyAmount, vat 값이 정확함
+  - content[].transactionAmounts에 ORDER_AMOUNT(주문금액) 항목만 포함됨 (가게배달팁은 없음)
+- **실제 결과**: (테스트 후 기록)
+
+### 테스트 케이스 3: 배민 부담 가게배달팁 금액 정확성 확인
+- **목적**: 배민 부담 가게배달팁의 금액이 정확하게 계산되는지 확인
+- **선행 조건**: 
+  - 배민 부담 가게배달팁이 3,000원인 거래 데이터가 존재함
+  - 거래처번호가 유효함
+- **테스트 단계**:
+  1. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX
+  2. 응답 확인
+- **예상 결과**:
+  - HTTP 상태 코드: 200 OK
+  - content[].adjustAmounts 배열에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP 코드가 포함됨
+  - BARO_WOOWABROS_CHARGE_DELIVERY_TIP 항목의 amount 값이 3,000원
+  - BARO_WOOWABROS_CHARGE_DELIVERY_TIP 항목의 supplyAmount 값이 2,727원
+  - BARO_WOOWABROS_CHARGE_DELIVERY_TIP 항목의 vat 값이 273원
+- **실제 결과**: (테스트 후 기록)
+
+### 테스트 케이스 4: 정산기준금액 계산 정확성 확인
+- **목적**: 배민 부담 가게배달팁이 정산기준금액에 정확하게 반영되는지 확인
+- **선행 조건**: 
+  - 배민 부담 가게배달팁이 있는 거래 데이터가 존재함
+  - 거래처번호가 유효함
+- **테스트 단계**:
+  1. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX
+  2. 응답 확인
+- **예상 결과**:
+  - HTTP 상태 코드: 200 OK
+  - content[].baseAmount 값이 정확함 (주문금액 + 배민 부담 가게배달팁)
+  - 예: 주문금액 10,000원 + 배민 부담 가게배달팁 3,000원 = 13,000원
+- **실제 결과**: (테스트 후 기록)
+
+### 테스트 케이스 5: 정산예정금액 계산 정확성 확인
+- **목적**: 배민 부담 가게배달팁이 정산예정금액에 정확하게 반영되는지 확인
+- **선행 조건**: 
+  - 배민 부담 가게배달팁이 있는 거래 데이터가 존재함
+  - 거래처번호가 유효함
+- **테스트 단계**:
+  1. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX
+  2. 응답 확인
+- **예상 결과**:
+  - HTTP 상태 코드: 200 OK
+  - content[].txResultAmount 값이 정확함
+  - 예: 정산기준금액 13,000원 - 결제정산수수료(공급가액 390원 + 부가세 39원) = 12,571원
+- **실제 결과**: (테스트 후 기록)
+
+### 테스트 케이스 6: 여러 거래 조회 시 배민 부담 가게배달팁 정보 확인
+- **목적**: 여러 거래를 조회할 때 배민 부담 가게배달팁 정보가 정확하게 제공되는지 확인
+- **선행 조건**: 
+  - 배민 부담 가게배달팁이 있는 거래와 없는 거래가 모두 존재함
+  - 거래처번호가 유효함
+- **테스트 단계**:
+  1. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX
+  2. 응답 확인
+- **예상 결과**:
+  - HTTP 상태 코드: 200 OK
+  - 배민 부담 가게배달팁이 있는 거래의 경우 content[].adjustAmounts 배열에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP 코드가 포함됨
+  - 배민 부담 가게배달팁이 없는 거래의 경우 content[].adjustAmounts 배열에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP 코드가 없음
+- **실제 결과**: (테스트 후 기록)
+
+### 테스트 케이스 7: 페이지네이션 적용 시 배민 부담 가게배달팁 정보 확인
+- **목적**: 페이지네이션을 적용하여 거래를 조회할 때 배민 부담 가게배달팁 정보가 정확하게 제공되는지 확인
+- **선행 조건**: 
+  - 배민 부담 가게배달팁이 있는 거래가 다수 존재함
+  - 거래처번호가 유효함
+- **테스트 단계**:
+  1. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX&page=0&size=10
+  2. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX&page=1&size=10
+  3. 응답 확인
+- **예상 결과**:
+  - HTTP 상태 코드: 200 OK
+  - 각 페이지에서 배민 부담 가게배달팁이 있는 거래의 경우 content[].adjustAmounts 배열에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP 코드가 포함됨
+  - 페이지네이션 정보(totalPages, totalElements, page, size)가 정확함
+- **실제 결과**: (테스트 후 기록)
+
+### 테스트 케이스 8: 특정 관리번호(subKey)로 필터링 시 배민 부담 가게배달팁 정보 확인
+- **목적**: 특정 관리번호(가게번호)로 필터링하여 거래를 조회할 때 배민 부담 가게배달팁 정보가 정확하게 제공되는지 확인
+- **선행 조건**: 
+  - 배민 부담 가게배달팁이 있는 거래가 특정 관리번호(가게번호)에 존재함
+  - 거래처번호가 유효함
+- **테스트 단계**:
+  1. API 호출: GET /common-api/v2/customers/{customerNo}/tx-histories?txDate=2024-XX-XX&subKey={subKey}
+  2. 응답 확인
+- **예상 결과**:
+  - HTTP 상태 코드: 200 OK
+  - 해당 관리번호(가게번호)의 거래만 조회됨
+  - 배민 부담 가게배달팁이 있는 거래의 경우 content[].adjustAmounts 배열에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP 코드가 포함됨
+- **실제 결과**: (테스트 후 기록)
+
+## 테스트 환경
+- **테스트 환경**: 개발/베타/운영
+- **테스트 데이터**: 실제 거래 데이터 또는 테스트용 데이터
+- **테스트 도구**: Postman, curl 등
+
+## 테스트 결과 요약
+(테스트 완료 후 기록)
