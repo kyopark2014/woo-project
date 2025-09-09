@@ -1,0 +1,98 @@
+파일을 확인한 결과, 정산지급내역 조회 V6에 대한 테스트 케이스를 작성해야 합니다. 이 API는 거래처번호를 Path Parameter로 받아 정산지급내역을 조회하는 기능을 제공합니다.
+
+# 정산지급내역 조회 V6 테스트 케이스
+
+## 기본 정보
+- **End Point**: /api/v6/customer/{customerNo}/give-history
+- **Path Parameters**: customerNo (거래처번호)
+
+## 테스트 케이스 1: 기본 조회 기능 검증
+**목적**: API의 기본 조회 기능이 정상적으로 동작하는지 확인
+
+**테스트 단계**:
+1. 유효한 거래처번호로 API 호출
+2. 응답 상태 코드 확인
+3. 응답 데이터 구조 및 필드 확인
+
+**예상 결과**:
+- 상태 코드: 200 OK
+- 응답 데이터에 totalElements, size, number, totalPages, details 필드 포함
+- details 배열에 정산지급내역 데이터 포함
+
+## 테스트 케이스 2: 배민 부담 가게배달팁 필드 검증
+**목적**: 새로 추가된 'baroWoowabrosChargeDelivertyTip' 필드가 정상적으로 제공되는지 확인
+
+**테스트 단계**:
+1. 배민 부담 가게배달팁이 있는 거래처번호로 API 호출
+2. 응답 데이터에서 'baroWoowabrosChargeDelivertyTip' 필드 확인
+
+**예상 결과**:
+- 'baroWoowabrosChargeDelivertyTip' 필드가 응답에 포함됨
+- 배민 부담 가게배달팁이 있는 경우 해당 필드 값이 정확히 표시됨 (예: 3,000)
+
+## 테스트 케이스 3: 배달팁과 배민 부담 가게배달팁 관계 검증
+**목적**: 배달팁(baeminDeliveryTipAmount)과 배민 부담 가게배달팁(baroWoowabrosChargeDelivertyTip) 간의 관계 확인
+
+**테스트 단계**:
+1. 배민 부담 가게배달팁이 있는 거래처번호로 API 호출
+2. 응답에서 baeminDeliveryTipAmount와 baroWoowabrosChargeDelivertyTip 값 확인
+
+**예상 결과**:
+- 배민 부담 가게배달팁이 있는 경우 baeminDeliveryTipAmount는 0
+- baroWoowabrosChargeDelivertyTip에 배민 부담 가게배달팁 금액이 표시됨
+
+## 테스트 케이스 4: 정산기준금액 계산 검증
+**목적**: 배민 부담 가게배달팁이 정산기준금액에 정확히 반영되는지 확인
+
+**테스트 단계**:
+1. 배민 부담 가게배달팁이 있는 거래처번호로 API 호출
+2. 응답에서 txOrderAmount, baroWoowabrosChargeDelivertyTip, baseAmount 값 확인
+
+**예상 결과**:
+- baseAmount = txOrderAmount + baroWoowabrosChargeDelivertyTip
+- 예시: txOrderAmount(10,000) + baroWoowabrosChargeDelivertyTip(3,000) = baseAmount(13,000)
+
+## 테스트 케이스 5: 페이지네이션 기능 검증
+**목적**: API의 페이지네이션 기능이 정상적으로 동작하는지 확인
+
+**테스트 단계**:
+1. 페이지 파라미터를 포함하여 API 호출 (예: page=0, size=10)
+2. 응답에서 페이지 관련 정보 확인
+
+**예상 결과**:
+- number 필드가 요청한 페이지 번호와 일치
+- size 필드가 요청한 페이지 크기와 일치
+- totalPages와 totalElements가 적절한 값으로 반환됨
+
+## 테스트 케이스 6: 잘못된 거래처번호 검증
+**목적**: 잘못된 거래처번호로 요청 시 적절한 오류 응답을 반환하는지 확인
+
+**테스트 단계**:
+1. 존재하지 않는 거래처번호로 API 호출
+2. 응답 상태 코드 및 오류 메시지 확인
+
+**예상 결과**:
+- 적절한 오류 상태 코드 반환 (예: 404 Not Found)
+- 오류 메시지에 거래처를 찾을 수 없다는 내용 포함
+
+## 테스트 케이스 7: 날짜 범위 필터링 검증
+**목적**: 날짜 범위 필터링이 정상적으로 동작하는지 확인
+
+**테스트 단계**:
+1. 특정 날짜 범위를 지정하여 API 호출 (예: startDate, endDate 파라미터 사용)
+2. 응답 데이터에서 반환된 정산지급내역의 날짜 확인
+
+**예상 결과**:
+- 반환된 모든 정산지급내역의 날짜가 지정한 범위 내에 있음
+
+## 테스트 케이스 8: 정산유형별 필터링 검증
+**목적**: 정산유형별 필터링이 정상적으로 동작하는지 확인
+
+**테스트 단계**:
+1. 특정 정산유형을 지정하여 API 호출 (예: settleCode 파라미터 사용)
+2. 응답 데이터에서 반환된 정산지급내역의 정산유형 확인
+
+**예상 결과**:
+- 반환된 모든 정산지급내역의 정산유형이 지정한 값과 일치
+
+이상의 테스트 케이스를 통해 정산지급내역 조회 V6 API의 기능과 새로 추가된 배민 부담 가게배달팁 필드의 정상 동작 여부를 종합적으로 검증할 수 있습니다.

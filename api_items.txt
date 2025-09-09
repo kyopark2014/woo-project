@@ -1,0 +1,56 @@
+거래 조회 V2 (공통API)
+- End Point: /common-api/v2/customers/{customerNo}/tx-histories
+- Path Parameters: customerNo (거래처번호)
+- Request Parameters: txDate, subKey, page, size
+- Request Header: Authorization, settle-user-type
+
+거래 조회 (부분환불) V2 (공통API)
+- End Point: /common-api/v2/customers/{customerNo}/manual-tx-histories
+- Path Parameters: customerNo (거래처번호)
+- Request Parameters: txDate, subKey, page, size
+- Request Header: settle-user-type
+
+지급내역 조회 V2 (공통API)
+- End Point: /common-api/v2/customers/{customerNo}/gives
+- Path Parameters: customerNo (거래처번호)
+- Request Parameters: depositDueStartDate, depositDueEndDate, settleCodes
+
+지급 거래집계 조회 API (공통API)
+- End Point: /common-api/v1/gives/{giveId}/tx-summaries
+- Path Parameters: giveId (지급 번호)
+
+부가세 참고자료 매출 집계
+- End Point: /api/v1/customer/{customerNo}/additional-tax/sales/summary
+- Path Parameters: customerNo (거래처번호)
+- Request Parameters: startMonth, endMonth, excludeMeet
+
+부가세 참고자료 매출 상세
+- End Point: /api/v1/customer/{customerNo}/additional-tax/sales/detail
+- Path Parameters: customerNo (거래처번호)
+- Request Parameters: startMonth, endMonth, excludeMeet
+
+부가세 참고자료 FAX 전송 V3
+- 메일/팩스 발송 API
+
+부가세 참고자료 메일 전송 V3
+- 메일/팩스 발송 API
+
+부가세 참고자료 매출 상세 메일
+- 메일/팩스 발송 API
+
+주문 내역 V2
+- 셀프서비스(주문) API
+
+정산지급내역 조회 V6
+- End Point: /api/v6/customer/{customerNo}/give-history
+- Path Parameters: customerNo (거래처번호)
+
+정산지급내역 거래건별 조회 V3
+- Request Parameters: startDate, endDate, customerNo
+
+정산예정금액 계산API
+- End Point: /common-api/v1/calculate/tx-result-amount/{serviceTxNo}
+- Request Parameters: serviceTxNo, txDate, amountType, billingCancelTradeNo, billingServiceCancelNo
+
+정산예정금액 계산 input 조회 API
+- 결제허브팀 API

@@ -5,6 +5,8 @@ import os
 import mcp_agent.utils as utils
 import boto3
 import re
+import asyncio
+import time
 
 from typing import Dict, List, Optional
 from strands import Agent
@@ -67,6 +69,38 @@ def get_model():
     bedrock_client = boto3.client(
         'bedrock-runtime',
         region_name=aws_region,
+        config=bedrock_config
+    )
+
+    model = BedrockModel(
+        client=bedrock_client,
+        model_id=model_id,
+        max_tokens=maxOutputTokens,
+        stop_sequences = [STOP_SEQUENCE],
+        temperature = 0.1,
+        top_p = 0.9,
+        additional_request_fields={
+            "thinking": {
+                "type": "disabled"
+            }
+        }
+    )
+    return model
+
+def get_model_with_region(region):
+    STOP_SEQUENCE = "\n\nHuman:" 
+    maxOutputTokens = 4096 # 4k
+
+    # Bedrock client configuration
+    bedrock_config = Config(
+        read_timeout=900,
+        connect_timeout=900,
+        retries=dict(max_attempts=3, mode="adaptive"),
+    )
+    
+    bedrock_client = boto3.client(
+        'bedrock-runtime',
+        region_name=region,
         config=bedrock_config
     )
 
@@ -164,6 +198,40 @@ def initialize_agent(system_prompt=None):
                 "모르는 질문을 받으면 솔직히 모른다고 말합니다."
             )
         model = get_model()
+
+        agent = Agent(
+            model=model,
+            system_prompt=system_prompt,
+            tools=tools,
+            conversation_manager=conversation_manager
+        )
+    
+    return agent, knowledge_base_mcp_client, filesystem_client, tool_list
+
+def initialize_agent_with_region(system_prompt=None, region=None):
+    """Initialize the global agent with MCP client"""
+    knowledge_base_mcp_client = create_mcp_client("knowledge_base")
+    filesystem_client = create_mcp_client("filesystem")
+        
+    # Create agent within MCP client context manager
+    with knowledge_base_mcp_client, filesystem_client:
+        mcp_tools = knowledge_base_mcp_client.list_tools_sync()
+        mcp_tools.extend(filesystem_client.list_tools_sync())
+        logger.info(f"mcp_tools: {mcp_tools}")
+        
+        tools = []
+        tools.extend(mcp_tools)
+
+        tool_list = get_tool_list(tools)
+        logger.info(f"tools loaded: {tool_list}")
+    
+        if system_prompt is None:
+            system_prompt = (
+                "당신의 이름은 현민이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
+                "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다." 
+                "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            )
+        model = get_model_with_region(region)
 
         agent = Agent(
             model=model,
@@ -447,6 +515,99 @@ async def run_multi_agent(query: str, containers: Optional[Dict[str, Any]]=None)
 
     return api_lists
 
+async def run_parallel_agent(query: str, containers: Optional[Dict[str, Any]]=None):
+    global index, status_msg
+    index = 0
+    status_msg = []
+    
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"(start"))  
+
+    # create agent
+    system_prompt = (
+        "당신은 숙련된 QA 엔지니어입니다."
+        "사용자가 전달한 파일을 로딩한 후에, 해당 문서의 API 항목만을 추출하세요."
+        "API 항목에 <item> 태그를 추가하세요."
+        "API 항목은 중복되지 않도록 추출하세요."
+    )
+
+    agent, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent(system_prompt=system_prompt)
+
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"extract_list"))  
+
+    # if containers is not None and tool_list:
+    #     containers['tools'].info(f"tool_list: {tool_list}")
+    logger.info(f"tool_list: {tool_list}")
+
+    with knowledge_base_mcp_client, filesystem_client:
+        if containers is not None:
+            add_response(containers, "## API 항목 추출 중...\n")
+        
+        agent_stream = agent.stream_async(query)
+        result = await show_streams(agent_stream, containers)
+        logger.info(f"results: {result}")
+        
+        # Extract API items from results and store in array
+        api_items = []
+        if result:
+            # Convert result to string if needed
+            results_text = str(result) if not isinstance(result, str) else result
+            logger.info(f"results_text: {results_text}")
+            
+            # Split by <item> tags and extract content            
+            # Find all <item> tags and their content, ensuring we don't include text before <item>
+            item_pattern = r'<item>([^<]*(?:<[^/][^>]*>[^<]*</[^>]*>[^<]*)*)</item>'
+            matches = re.findall(item_pattern, results_text, re.DOTALL)
+            
+            for match in matches:
+                # Clean up the content (remove extra whitespace and newlines)
+                cleaned_item = match.strip()
+                if cleaned_item:
+                    api_items.append(cleaned_item)
+        
+        logger.info(f"extracted api_items: {api_items}")
+        logger.info(f"total api items found: {len(api_items)}")
+
+    api_lists = "\n\n".join(api_items)
+
+    # save api_items to file
+    with open("api_items.txt", "w", encoding="utf-8") as f:
+        f.write(api_lists)
+    
+    if containers is not None:
+        add_response(containers, "## 추출된 항목\n" + api_lists)
+
+    regions = ["ap-northeast-2", "ap-northeast-1", "us-west-2", "us-east-1", "us-east-2"]
+    max_concurrent = len(regions)
+    
+    # count time
+    start_time = time.time()
+    max_concurrent = 5 
+    count = 0    
+    while True:
+        tasks = []
+        for i in range(max_concurrent):
+            tasks.append(extract_qa_details_with_region(query, regions[i], count, api_items[count], containers))
+            count += 1
+            if count >= len(api_items):
+                break
+        results = await asyncio.gather(*tasks)
+        for result in results:
+            logger.info(f"result: {result}")
+            add_notification(containers, f"### Agent {count+1}\n{result}")
+
+        if count >= len(api_items):
+            break
+    
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"end)"))
+    
+    end_time = time.time()
+    logger.info(f"time: {end_time - start_time} seconds")
+
+    return api_lists
+
 async def extract_qa_details(query: str, qa_index:int, api_item:str, containers: Optional[Dict[str, Any]]=None):
     global index, status_msg
     status_msg = []
@@ -481,4 +642,39 @@ async def extract_qa_details(query: str, qa_index:int, api_item:str, containers:
     
     return result
 
+async def extract_qa_details_with_region(query: str, region:str, qa_index:int, api_item:str, containers: Optional[Dict[str, Any]]=None):
+    global index, status_msg
+    status_msg = []
+    
+    if containers is not None:
+        containers['status'].info(get_status_msg(f"(qa_details"))  
+
+    # create agent
+    system_prompt = (
+        "당신은 숙련된 QA 엔지니어입니다."
+        "사용자가 전달한 파일을 로딩한 후에, 다음의 <item> tag에 있는 QA 항목을 test case로 작성해주세요."
+        f"<item>{api_item}</item>" 
+        "test case는 중복되지 않도록 작성해주세요."
+        "답변은 한국어로 작성하세요."
+    )
+
+    agent, knowledge_base_mcp_client, filesystem_client, tool_list = initialize_agent_with_region(system_prompt=system_prompt, region=region)
+
+    logger.info(f"tool_list: {tool_list}")
+
+    with filesystem_client:
+        if containers is not None:
+            add_response(containers, f"# QA 항목 #{qa_index+1}\n")
+        
+        agent_stream = agent.stream_async(query)
+        result = await show_streams(agent_stream, containers)
+        logger.info(f"qa_detail: {result}")
+
+    # save result to file
+    with open(f"qa_details_{qa_index}.txt", "w", encoding="utf-8") as f:
+        f.write(result)
+    
+    return result
+
+    
     

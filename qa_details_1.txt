@@ -1,0 +1,182 @@
+이제 요청하신 QA 항목에 대한 테스트 케이스를 작성하겠습니다. 파일 내용을 확인한 결과, "거래 조회 (부분환불) V2 (공통API)"에 대한 정보를 찾았습니다.
+
+# 거래 조회 (부분환불) V2 (공통API) 테스트 케이스
+
+## 기본 정보
+- **End Point**: /common-api/v2/customers/{customerNo}/manual-tx-histories
+- **Path Parameters**: customerNo (거래처번호)
+- **Request Parameters**: txDate, subKey, page, size
+- **Request Header**: settle-user-type
+
+## 테스트 케이스
+
+### 테스트 케이스 1: 기본 파라미터로 거래 조회
+**목적**: 필수 파라미터만 사용하여 API가 정상적으로 동작하는지 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722 (유효한 거래처번호)
+- Request Parameter:
+  - txDate: 2024-03-07 (유효한 거래일자)
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 200 OK
+- 응답 본문: 해당 거래처의 거래 내역 데이터가 포함된 JSON 응답
+- 응답에는 totalPages, totalElements, page, size, content 필드가 포함됨
+
+### 테스트 케이스 2: 페이지네이션 파라미터 추가
+**목적**: 페이지네이션 파라미터가 정상적으로 적용되는지 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722
+- Request Parameter:
+  - txDate: 2024-03-07
+  - page: 1
+  - size: 50
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 200 OK
+- 응답의 page 값이 1이고 size 값이 50인지 확인
+- 최대 50개의 항목이 content 배열에 포함됨
+
+### 테스트 케이스 3: subKey 파라미터 추가
+**목적**: 특정 관리번호(가게번호)로 필터링이 정상적으로 동작하는지 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722
+- Request Parameter:
+  - txDate: 2024-03-07
+  - subKey: 12345 (유효한 관리번호)
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 200 OK
+- 응답의 content 배열에 있는 모든 항목의 subKey 값이 12345인지 확인
+
+### 테스트 케이스 4: 최대 크기 파라미터 테스트
+**목적**: size 파라미터의 최대값 제한이 정상적으로 적용되는지 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722
+- Request Parameter:
+  - txDate: 2024-03-07
+  - size: 500 (최대값 300 초과)
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 400 Bad Request 또는
+- 응답의 size 값이 300으로 제한되어 있음 (API 구현에 따라 다를 수 있음)
+
+### 테스트 케이스 5: 부분환불 데이터 확인
+**목적**: 부분환불 데이터가 정상적으로 조회되는지 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722
+- Request Parameter:
+  - txDate: 2024-03-07 (부분환불이 있는 날짜)
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 200 OK
+- 응답의 content 배열에 settleAmountType이 "PARTIAL_REFUND"인 항목이 포함됨
+- 해당 항목의 billingCancelTradeNo 필드가 null이 아님
+
+### 테스트 케이스 6: 잘못된 거래처번호 테스트
+**목적**: 유효하지 않은 거래처번호에 대한 오류 처리 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 999999999999 (존재하지 않는 거래처번호)
+- Request Parameter:
+  - txDate: 2024-03-07
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 404 Not Found 또는 적절한 오류 코드
+- 오류 메시지가 포함된 응답
+
+### 테스트 케이스 7: 필수 파라미터 누락 테스트
+**목적**: 필수 파라미터 누락 시 오류 처리 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722
+- Request Parameter:
+  - (txDate 파라미터 누락)
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 400 Bad Request
+- 필수 파라미터 누락에 대한 오류 메시지가 포함된 응답
+
+### 테스트 케이스 8: 인증 헤더 누락 테스트
+**목적**: 인증 헤더 누락 시 오류 처리 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722
+- Request Parameter:
+  - txDate: 2024-03-07
+- Request Header:
+  - settle-user-type: example
+  - (Authorization 헤더 누락)
+
+**예상 결과**:
+- HTTP 상태 코드: 401 Unauthorized
+- 인증 실패에 대한 오류 메시지가 포함된 응답
+
+### 테스트 케이스 9: 잘못된 날짜 형식 테스트
+**목적**: 잘못된 날짜 형식에 대한 오류 처리 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722
+- Request Parameter:
+  - txDate: 2024/03/07 (잘못된 형식)
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 400 Bad Request
+- 날짜 형식 오류에 대한 메시지가 포함된 응답
+
+### 테스트 케이스 10: 응답 데이터 구조 검증
+**목적**: 응답 데이터가 예상된 구조와 일치하는지 확인
+
+**입력**:
+- Path Parameter:
+  - customerNo: 202305240722
+- Request Parameter:
+  - txDate: 2024-03-07
+- Request Header:
+  - settle-user-type: example
+  - Authorization: Bearer {access_token}
+
+**예상 결과**:
+- HTTP 상태 코드: 200 OK
+- 응답의 content 배열에 있는 각 항목이 다음 필드를 포함:
+  - id, txDate, settleCode, settleServiceType, giveCycleCode, customerNo, paymentCustomerNo, subKey, subName, salesScaleType, serviceTxNo, billingCancelTradeNo, settleAmountType, baseAmount, txResultAmount, transactionAmounts, feeAmounts, settleExcludeAmounts, payMethodAmounts
+- 부분환불 데이터의 경우 settleAmountType이 "PARTIAL_REFUND"이고 transactionAmounts 배열에 ORDER_AMOUNT 코드만 존재
+
+이상의 테스트 케이스를 통해 "거래 조회 (부분환불) V2 (공통API)"의 다양한 시나리오를 검증할 수 있습니다.
