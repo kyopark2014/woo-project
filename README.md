@@ -394,7 +394,7 @@ QA Multi Agent에서는 list로 된 job들을 반복해서 수행합니다. 이�
 
 <img width="198" height="212" alt="image" src="https://github.com/user-attachments/assets/f76a4634-ea05-420f-89ad-4b3ada97bb6c" />
 
-On-demand로 LLM을 사용하시에 병렬로 수행하면 Quota 문제가 발생합니다 따라서 아래와 같이 get_model에 region을 추가합니다. boto3 client의 region 정보를 달리하면 전체 quota가 늘어나는 효과가 있습니다. 
+On-demand로 LLM을 사용할 때에 sigle region에서 병렬로 task를 수행하면 Quota 문제가 발생합니다. 따라서 아래와 같이 get_model에 region을 추가합니다. boto3 client의 region 정보를 달리하면 전체 quota가 늘어나는 효과가 있습니다. 
 
 ```pythob
 def get_model_with_model(region):
@@ -430,7 +430,7 @@ def get_model_with_model(region):
     return model
 ```
 
-이후 아래와 같이 regions에 여러 리전에 대한 정보를 넣고 max_concurrent를 n개로 설정합니다. 이후 extract_qa_details_with_region을 수행할 때마다 다른 리전을 할당하고 task에 job들을 추가하여 처리합니다. 
+이후 아래와 같이 regions에 여러 리전에 대한 정보를 넣고 max_concurrent를 n개로 설정합니다. 이후 extract_qa_details_with_region을 수행할 때마다 다른 리전을 할당하고 task에 job들을 추가하여 처리합니다. 만약 5개보다 더 많은 병렬처리가 필요할 경우에 리전을 추가합니다. 
 
 ```python
 regions = ["ap-northeast-2", "ap-northeast-1", "us-west-2", "us-east-1", "us-east-2"]
@@ -452,7 +452,7 @@ while True:
         break
 ```
 
-전체 14개의 api에 대한 test case를 추출할 때에 병렬화전에 657초가 소요되었으나 5개로 병렬처리할 경우에 전체 시간 181초가 소요되어, 3.6배로 속도가 개선되었습니다.
+전체 14개의 api에 대한 test case를 추출할 때에 병렬화전에 657초가 소요되었으나 5개로 병렬처리하면 전체 수행 시간이 181초가 되어서, 3.6배의 속도 개선이 가능하였습니다.
 
 <img width="176" height="309" alt="image" src="https://github.com/user-attachments/assets/a9eacf67-08e9-4fdd-93af-1cd172482257" />
 
