@@ -3,54 +3,67 @@
 - Path Parameters: customerNo (거래처번호)
 - Request Parameters: txDate, subKey, page, size
 - Request Header: Authorization, settle-user-type
+- Response: 정산기준거래금액, 정산기준조정금액(배민 부담 가게배달팁 포함) 등 상세 정보
 
 거래 조회 (부분환불) V2 (공통API)
 - End Point: /common-api/v2/customers/{customerNo}/manual-tx-histories
 - Path Parameters: customerNo (거래처번호)
 - Request Parameters: txDate, subKey, page, size
 - Request Header: settle-user-type
+- Response: 부분환불 관련 정산 정보
 
 지급내역 조회 V2 (공통API)
 - End Point: /common-api/v2/customers/{customerNo}/gives
 - Path Parameters: customerNo (거래처번호)
 - Request Parameters: depositDueStartDate, depositDueEndDate, settleCodes
+- Response: 정산기준조정금액 등 지급 관련 정보
 
 지급 거래집계 조회 API (공통API)
 - End Point: /common-api/v1/gives/{giveId}/tx-summaries
 - Path Parameters: giveId (지급 번호)
+- Response: 정산기준조정금액(배민 부담 가게배달팁 포함) 등 거래집계 정보
 
 부가세 참고자료 매출 집계
 - End Point: /api/v1/customer/{customerNo}/additional-tax/sales/summary
 - Path Parameters: customerNo (거래처번호)
 - Request Parameters: startMonth, endMonth, excludeMeet
+- Response: 매출구분코드, 매출구분명, 공급가액, 부가세, 합계 등
 
 부가세 참고자료 매출 상세
 - End Point: /api/v1/customer/{customerNo}/additional-tax/sales/detail
 - Path Parameters: customerNo (거래처번호)
 - Request Parameters: startMonth, endMonth, excludeMeet
+- Response: 일자, 매출구분코드, 매출구분명, 결제수단코드, 결제수단명 등
 
 부가세 참고자료 FAX 전송 V3
-- 메일/팩스 발송 API
+- 배민 부담 가게배달팁 '기타매출'로 포함/제공
 
 부가세 참고자료 메일 전송 V3
-- 메일/팩스 발송 API
+- 배민 부담 가게배달팁 '기타매출'로 포함/제공
 
 부가세 참고자료 매출 상세 메일
-- 메일/팩스 발송 API
+- 배민 부담 가게배달팁 '기타매출'로 포함/제공
 
 주문 내역 V2
-- 셀프서비스(주문) API
+- End Point: /api/v2/orders
+- Request Parameters: orderNos
+- Response: 배달금액, 배달항목코드(배민 부담 가게배달팁 포함) 등
 
 정산지급내역 조회 V6
 - End Point: /api/v6/customer/{customerNo}/give-history
 - Path Parameters: customerNo (거래처번호)
+- Response: 배민 부담 가게배달팁 필드 추가
 
 정산지급내역 거래건별 조회 V3
+- End Point: 명시되지 않음
 - Request Parameters: startDate, endDate, customerNo
+- Response: 배민 부담 가게배달팁 필드 추가
 
 정산예정금액 계산API
 - End Point: /common-api/v1/calculate/tx-result-amount/{serviceTxNo}
-- Request Parameters: serviceTxNo, txDate, amountType, billingCancelTradeNo, billingServiceCancelNo
+- Path Parameters: serviceTxNo (주문번호)
+- Request Parameters: txDate, amountType, billingCancelTradeNo, billingServiceCancelNo
+- Response: 정산예정금액 계산 결과
 
 정산예정금액 계산 input 조회 API
-- 결제허브팀 API
+- 필드명 추가: data.baroWoowabrosChargeDelivertyTip (배민 부담 가게배달팁)

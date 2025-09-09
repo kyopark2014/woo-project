@@ -1,146 +1,188 @@
-이제 "거래 조회 V2 (공통API)"에 대한 테스트 케이스를 작성하겠습니다.
+파일 내용을 확인했습니다. 이제 "거래 조회 V2 (공통API)"에 대한 테스트 케이스를 작성하겠습니다.
 
 # 거래 조회 V2 (공통API) 테스트 케이스
 
-## 기본 정보
+## 테스트 케이스 개요
 - **End Point**: /common-api/v2/customers/{customerNo}/tx-histories
 - **Path Parameters**: customerNo (거래처번호)
 - **Request Parameters**: txDate, subKey, page, size
 - **Request Header**: Authorization, settle-user-type
+- **Response**: 정산기준거래금액, 정산기준조정금액(배민 부담 가게배달팁 포함) 등 상세 정보
 
-## 테스트 케이스
+## 테스트 케이스 목록
 
-### 테스트 케이스 1: 기본 파라미터 검증
-**목적**: 필수 파라미터 검증 및 유효성 확인
+### TC-01: 기본 거래 조회 - 필수 파라미터만 사용
+**설명**: 필수 파라미터인 customerNo와 txDate만 사용하여 거래 내역을 조회합니다.
+- **전제 조건**: 유효한 Authorization 토큰과 settle-user-type이 있어야 함
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. API 호출
+- **예상 결과**: 
+  - HTTP 상태 코드 200
+  - 해당 거래처의 지정된 날짜의 거래 내역이 반환됨
+  - totalPages, totalElements, page, size, content 필드가 포함됨
 
-**단계**:
-1. customerNo 없이 API 호출
-2. txDate 없이 API 호출
-3. 유효하지 않은 형식의 txDate로 API 호출
-4. 유효한 customerNo와 txDate로 API 호출
+### TC-02: 할인 없는 거래 조회
+**설명**: 할인이 없는 일반 거래 내역을 조회합니다.
+- **전제 조건**: 
+  - 유효한 Authorization 토큰과 settle-user-type이 있어야 함
+  - 주문금액 10,000원, 가게배달팁 3,000원인 거래가 존재해야 함
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. API 호출
+- **예상 결과**: 
+  - HTTP 상태 코드 200
+  - transactionAmounts에 ORDER_AMOUNT(주문금액) 10,000원과 BARO_DELIVERYTIP(가게배달팁) 3,000원이 포함됨
+  - adjustAmounts는 비어있거나 0원으로 표시됨
+  - 정산기준금액(baseAmount)이 13,000원으로 표시됨
 
-**예상 결과**:
-1. 오류 응답 (400 Bad Request) - customerNo는 필수 파라미터
-2. 오류 응답 (400 Bad Request) - txDate는 필수 파라미터
-3. 오류 응답 (400 Bad Request) - 날짜 형식은 yyyy-MM-dd 형식이어야 함
-4. 성공 응답 (200 OK) - 해당 거래처의 거래 내역 반환
+### TC-03: 배민 부담 가게배달팁이 있는 거래 조회
+**설명**: 배민 부담 가게배달팁이 적용된 거래 내역을 조회합니다.
+- **전제 조건**: 
+  - 유효한 Authorization 토큰과 settle-user-type이 있어야 함
+  - 주문금액 10,000원, 배민 부담 가게배달팁 3,000원인 거래가 존재해야 함
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. API 호출
+- **예상 결과**: 
+  - HTTP 상태 코드 200
+  - transactionAmounts에 ORDER_AMOUNT(주문금액) 10,000원이 포함됨
+  - adjustAmounts에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP(배민 부담 가게배달팁) 3,000원이 포함됨
+  - 정산기준금액(baseAmount)이 13,000원으로 표시됨
 
-### 테스트 케이스 2: 페이지네이션 검증
-**목적**: 페이지네이션 기능 검증
+### TC-04: 페이지네이션 테스트
+**설명**: 페이지네이션 파라미터를 사용하여 거래 내역을 조회합니다.
+- **전제 조건**: 유효한 Authorization 토큰과 settle-user-type이 있어야 함
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. page=1, size=50을 Request Parameter로 설정
+  4. API 호출
+- **예상 결과**: 
+  - HTTP 상태 코드 200
+  - 두 번째 페이지의 거래 내역이 최대 50개까지 반환됨
+  - page=1, size=50이 응답에 반영됨
 
-**단계**:
-1. page=0, size=10으로 API 호출
-2. page=1, size=10으로 API 호출
-3. size=300(최대값)으로 API 호출
-4. size=301(최대값 초과)으로 API 호출
+### TC-05: 특정 가게(subKey)의 거래 조회
+**설명**: 특정 가게(subKey)의 거래 내역만 조회합니다.
+- **전제 조건**: 유효한 Authorization 토큰과 settle-user-type이 있어야 함
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. subKey를 Request Parameter로 설정
+  4. API 호출
+- **예상 결과**: 
+  - HTTP 상태 코드 200
+  - 지정된 subKey(가게번호)에 해당하는 거래 내역만 반환됨
 
-**예상 결과**:
-1. 성공 응답 (200 OK) - 첫 페이지의 10개 항목 반환
-2. 성공 응답 (200 OK) - 두 번째 페이지의 10개 항목 반환
-3. 성공 응답 (200 OK) - 300개 항목 반환
-4. 오류 응답 (400 Bad Request) - size는 최대 300까지 가능
+### TC-06: 유효하지 않은 거래처번호로 조회
+**설명**: 존재하지 않는 거래처번호로 API를 호출합니다.
+- **전제 조건**: 유효한 Authorization 토큰과 settle-user-type이 있어야 함
+- **테스트 단계**:
+  1. 존재하지 않는 customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. API 호출
+- **예상 결과**: 
+  - 적절한 오류 코드와 메시지가 반환됨 (예: 404 Not Found)
 
-### 테스트 케이스 3: 할인 없는 거래 조회
-**목적**: 할인이 없는 일반 거래 조회 검증
+### TC-07: 유효하지 않은 날짜 형식으로 조회
+**설명**: 잘못된 형식의 txDate로 API를 호출합니다.
+- **전제 조건**: 유효한 Authorization 토큰과 settle-user-type이 있어야 함
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. 잘못된 형식의 txDate(예: "2024/03/07")를 Request Parameter로 설정
+  3. API 호출
+- **예상 결과**: 
+  - 적절한 오류 코드와 메시지가 반환됨 (예: 400 Bad Request)
 
-**단계**:
-1. 할인이 없는 거래가 있는 날짜로 API 호출
-2. 응답의 content[].transactionAmounts 확인
-3. 응답의 content[].adjustAmounts 확인
+### TC-08: 인증 토큰 없이 조회
+**설명**: Authorization 헤더 없이 API를 호출합니다.
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. Authorization 헤더 없이 API 호출
+- **예상 결과**: 
+  - 인증 오류 코드와 메시지가 반환됨 (예: 401 Unauthorized)
 
-**예상 결과**:
-1. 성공 응답 (200 OK)
-2. transactionAmounts에 ORDER_AMOUNT(주문금액)와 BARO_DELIVERYTIP(가게배달팁) 항목 포함
-   - ORDER_AMOUNT: 10,000원 (공급가액: 9,090원, 부가세: 910원)
-   - BARO_DELIVERYTIP: 3,000원 (공급가액: 2,727원, 부가세: 273원)
-3. adjustAmounts는 비어있음 (할인 없음)
+### TC-09: 사용자 타입 없이 조회
+**설명**: settle-user-type 헤더 없이 API를 호출합니다.
+- **전제 조건**: 유효한 Authorization 토큰이 있어야 함
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. settle-user-type 헤더 없이 API 호출
+- **예상 결과**: 
+  - 적절한 오류 코드와 메시지가 반환됨
 
-### 테스트 케이스 4: 배민 부담 가게배달팁이 있는 거래 조회
-**목적**: 배민 부담 가게배달팁이 적용된 거래 조회 검증
+### TC-10: 배민 부담 가게배달팁과 다른 조정 항목이 함께 있는 거래 조회
+**설명**: 배민 부담 가게배달팁과 다른 조정 항목(예: 사장님부담 쿠폰, 메뉴할인지원)이 함께 적용된 거래 내역을 조회합니다.
+- **전제 조건**: 
+  - 유효한 Authorization 토큰과 settle-user-type이 있어야 함
+  - 주문금액, 배민 부담 가게배달팁, 사장님부담 쿠폰 등이 적용된 거래가 존재해야 함
+- **테스트 단계**:
+  1. customerNo를 Path Parameter로 설정
+  2. txDate를 Request Parameter로 설정
+  3. API 호출
+- **예상 결과**: 
+  - HTTP 상태 코드 200
+  - transactionAmounts에 ORDER_AMOUNT(주문금액)이 포함됨
+  - adjustAmounts에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP(배민 부담 가게배달팁)과 다른 조정 항목들이 포함됨
+  - 모든 조정 항목이 정확히 반영된 정산기준금액(baseAmount)이 표시됨
 
-**단계**:
-1. 배민 부담 가게배달팁이 적용된 거래가 있는 날짜로 API 호출
-2. 응답의 content[].transactionAmounts 확인
-3. 응답의 content[].adjustAmounts 확인
+## 테스트 데이터 예시
 
-**예상 결과**:
-1. 성공 응답 (200 OK)
-2. transactionAmounts에 ORDER_AMOUNT(주문금액) 항목만 포함
-   - ORDER_AMOUNT: 10,000원 (공급가액: 9,090원, 부가세: 910원)
-3. adjustAmounts에 BARO_WOOWABROS_CHARGE_DELIVERY_TIP(배민 부담 가게배달팁) 항목 포함
-   - BARO_WOOWABROS_CHARGE_DELIVERY_TIP: 3,000원 (공급가액: 2,727원, 부가세: 273원)
+### 테스트 케이스 2: 할인 없는 거래
+```json
+{
+  "content": [{
+    "transactionAmounts": [
+      {
+        "code": "ORDER_AMOUNT",
+        "amount": 10000,
+        "supplyAmount": 9090,
+        "vat": 910
+      },
+      {
+        "code": "BARO_DELIVERYTIP",
+        "amount": 3000,
+        "supplyAmount": 2727,
+        "vat": 273
+      }
+    ],
+    "adjustAmounts": [],
+    "baseAmount": 13000,
+    "txResultAmount": 12571
+  }]
+}
+```
 
-### 테스트 케이스 5: 인증 및 권한 검증
-**목적**: API 접근 권한 검증
+### 테스트 케이스 3: 배민 부담 가게배달팁이 있는 거래
+```json
+{
+  "content": [{
+    "transactionAmounts": [
+      {
+        "code": "ORDER_AMOUNT",
+        "amount": 10000,
+        "supplyAmount": 9090,
+        "vat": 910
+      }
+    ],
+    "adjustAmounts": [
+      {
+        "code": "BARO_WOOWABROS_CHARGE_DELIVERY_TIP",
+        "amount": 3000,
+        "supplyAmount": 2727,
+        "vat": 273
+      }
+    ],
+    "baseAmount": 13000,
+    "txResultAmount": 12571
+  }]
+}
+```
 
-**단계**:
-1. Authorization 헤더 없이 API 호출
-2. 유효하지 않은 토큰으로 API 호출
-3. settle-user-type 헤더 없이 API 호출
-4. 유효한 인증 정보로 API 호출
-
-**예상 결과**:
-1. 오류 응답 (401 Unauthorized) - 인증 정보 필요
-2. 오류 응답 (401 Unauthorized) - 유효하지 않은 토큰
-3. 오류 응답 (400 Bad Request) - settle-user-type 헤더 필요
-4. 성공 응답 (200 OK) - 해당 거래처의 거래 내역 반환
-
-### 테스트 케이스 6: subKey 필터링 검증
-**목적**: subKey(가게번호)를 이용한 필터링 검증
-
-**단계**:
-1. 특정 subKey 값으로 API 호출
-2. 존재하지 않는 subKey 값으로 API 호출
-
-**예상 결과**:
-1. 성공 응답 (200 OK) - 해당 subKey를 가진 거래 내역만 반환
-2. 성공 응답 (200 OK) - 빈 content 배열 반환 (해당 subKey를 가진 거래 없음)
-
-### 테스트 케이스 7: 정산예정금액 계산 검증
-**목적**: 정산예정금액(txResultAmount) 계산 로직 검증
-
-**단계**:
-1. 할인 없는 거래 조회
-2. 배민 부담 가게배달팁이 있는 거래 조회
-3. 각 거래의 정산예정금액 확인
-
-**예상 결과**:
-1. 할인 없는 거래의 정산예정금액: 12,571원
-   - 정산기준금액(13,000원) - 결제정산수수료(429원) = 12,571원
-2. 배민 부담 가게배달팁이 있는 거래의 정산예정금액: 12,571원
-   - 정산기준금액(13,000원) - 결제정산수수료(429원) = 12,571원
-
-### 테스트 케이스 8: 데이터 없는 날짜 조회
-**목적**: 거래 데이터가 없는 날짜 조회 시 응답 검증
-
-**단계**:
-1. 거래 데이터가 없는 날짜로 API 호출
-
-**예상 결과**:
-1. 성공 응답 (200 OK) - totalElements: 0, content: [] (빈 배열)
-
-### 테스트 케이스 9: 다양한 정산 유형 조회
-**목적**: 다양한 정산 유형(settleCode)에 따른 응답 검증
-
-**단계**:
-1. 다양한 정산 유형이 있는 날짜로 API 호출
-2. 각 정산 유형별 응답 구조 확인
-
-**예상 결과**:
-1. 성공 응답 (200 OK)
-2. 각 정산 유형에 맞는 데이터 구조와 값이 반환됨
-
-### 테스트 케이스 10: 응답 데이터 구조 검증
-**목적**: 응답 데이터의 전체 구조 검증
-
-**단계**:
-1. API 호출 후 응답 데이터 구조 확인
-2. 필수 필드 존재 여부 확인
-3. 데이터 타입 확인
-
-**예상 결과**:
-1. 성공 응답 (200 OK)
-2. 모든 필수 필드가 존재함 (totalPages, totalElements, page, size, content 등)
-3. 각 필드의 데이터 타입이 명세와 일치함
-
-이 테스트 케이스들은 "거래 조회 V2 (공통API)"의 다양한 측면을 검증하며, 특히 배민 부담 가게배달팁 관련 기능이 정상적으로 동작하는지 확인합니다.
+이상의 테스트 케이스는 거래 조회 V2 API의 주요 기능과 예외 상황을 포괄적으로 테스트하며, 특히 배민 부담 가게배달팁 관련 기능이 정상적으로 동작하는지 확인하는 데 중점을 두고 있습니다.

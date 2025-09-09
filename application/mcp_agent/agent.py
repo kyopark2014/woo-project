@@ -501,7 +501,9 @@ async def run_multi_agent(query: str, containers: Optional[Dict[str, Any]]=None)
     if containers is not None:
         add_response(containers, "## 추출된 항목\n" + api_lists)
     
-    for i in range(2): # len(api_items)로 하면 전체를 추출할 수 있습니다. 편의상 3개만...
+    # count time
+    start_time = time.time()
+    for i in range(len(api_items)):
         if containers is not None:
             containers['status'].info(get_status_msg(f"extract_qa_details"))
 
@@ -510,6 +512,9 @@ async def run_multi_agent(query: str, containers: Optional[Dict[str, Any]]=None)
         
         await extract_qa_details(query, i, api_items[i], containers)
 
+    end_time = time.time()
+    logger.info(f"time: {end_time - start_time} seconds")
+    
     if containers is not None:
         containers['status'].info(get_status_msg(f"end)"))
 
