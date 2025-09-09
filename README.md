@@ -387,7 +387,75 @@ async def extract_qa_details(query: str, qa_index:int, api_item:str, containers:
     
     return result
 ```
+
+## QA Parallel Agent
+
+QA Multi Agent에서는 list로 된 job들을 반복해서 수행합니다. 이를 병렬로 처리학면 처리 시간을 단축할 수 있습니다. 아래와 같이 QA Agent (Parallel)을 선택하여 실행합니다.
+
+<img width="198" height="212" alt="image" src="https://github.com/user-attachments/assets/f76a4634-ea05-420f-89ad-4b3ada97bb6c" />
+
+On-demand로 LLM을 사용하시에 병렬로 수행하면 Quota 문제가 발생합니다 따라서 아래와 같이 get_model에 region을 추가합니다. boto3 client의 region 정보를 달리하면 전체 quota가 늘어나는 효과가 있습니다. 
+
+```pythob
+def get_model_with_model(region):
+    STOP_SEQUENCE = "\n\nHuman:" 
+    maxOutputTokens = 4096 # 4k
+
+    # Bedrock client configuration
+    bedrock_config = Config(
+        read_timeout=900,
+        connect_timeout=900,
+        retries=dict(max_attempts=3, mode="adaptive"),
+    )
     
+    bedrock_client = boto3.client(
+        'bedrock-runtime',
+        region_name=region,
+        config=bedrock_config
+    )
+
+    model = BedrockModel(
+        client=bedrock_client,
+        model_id=model_id,
+        max_tokens=maxOutputTokens,
+        stop_sequences = [STOP_SEQUENCE],
+        temperature = 0.1,
+        top_p = 0.9,
+        additional_request_fields={
+            "thinking": {
+                "type": "disabled"
+            }
+        }
+    )
+    return model
+```
+
+이후 아래와 같이 regions에 여러 리전에 대한 정보를 넣고 max_concurrent를 n개로 설정합니다. 이후 extract_qa_details_with_region을 수행할 때마다 다른 리전을 할당하고 task에 job들을 추가하여 처리합니다. 
+
+```python
+regions = ["ap-northeast-2", "ap-northeast-1", "us-west-2", "us-east-1", "us-east-2"]
+max_concurrent = 5 
+count = 0    
+while True:
+    tasks = []
+    for i in range(max_concurrent):
+        tasks.append(extract_qa_details_with_region(query, regions[i], count, api_items[count], containers))
+        count += 1
+        if count >= len(api_items):
+            break
+    results = await asyncio.gather(*tasks)
+    for result in results:
+        logger.info(f"result: {result}")
+        add_notification(containers, f"### Agent {count+1}\n{result}")
+
+    if count >= len(api_items):
+        break
+```
+
+전체 14개의 api에 대한 test case를 추출할 때에 병렬화전에 657초가 소요되었으나 5개로 병렬처리할 경우에 전체 시간 181초가 소요되어, 3.6배로 속도가 개선되었습니다.
+
+<img width="176" height="309" alt="image" src="https://github.com/user-attachments/assets/a9eacf67-08e9-4fdd-93af-1cd172482257" />
+
 
 ## Reference
 
