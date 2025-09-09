@@ -390,7 +390,7 @@ async def extract_qa_details(query: str, qa_index:int, api_item:str, containers:
 
 ## QA Parallel Agent
 
-QA Multi Agent에서는 list로 된 job들을 반복해서 수행합니다. 이를 병렬로 처리학면 처리 시간을 단축할 수 있습니다. 아래와 같이 QA Agent (Parallel)을 선택하여 실행합니다.
+QA Multi Agent에서는 list로 된 job들을 반복해서 수행합니다. 이를 병렬로 처리하면 처리 시간을 단축할 수 있습니다. 아래와 같이 QA Agent (Parallel)을 선택하여 실행합니다.
 
 <img width="198" height="212" alt="image" src="https://github.com/user-attachments/assets/f76a4634-ea05-420f-89ad-4b3ada97bb6c" />
 
