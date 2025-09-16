@@ -459,8 +459,46 @@ while True:
 
 ## 이미지 분석
 
-이미지가 간단하다면 LLM으로 쉽게 분석이 가능하지만 복잡한 그림이나 표를 포함할 경우에 이미지에 대한 힌트를 활용할 수 있습니다.
+이미지가 간단하다면 LLM으로 쉽게 분석이 가능하지만 복잡한 그림이나 표를 포함할 경우에 이미지에 대한 힌트를 활용할 수 있습니다. 아래에서는 base64 이미지와 함께 query를 함께 넣어서 전달하고 있는데, 이때 query에 이미지에 대한 정보를 함께 제공하면 이미지 분석의 결과를 향상 시킬 수 있습니다.
 
+```python
+def summary_image(img_base64, instruction):      
+    llm = get_chat()
+
+    if instruction:
+        query = f"{instruction}. <result> tag를 붙여주세요. 한국어로 답변하세요."
+        
+    else:
+        query = "이미지가 의미하는 내용을 풀어서 자세히 알려주세요. markdown 포맷으로 답변을 작성합니다."
+    
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_base64}", 
+                    },
+                },
+                {
+                    "type": "text", "text": query
+                },
+            ]
+        )
+    ]
+    
+    try: 
+        result = llm.invoke(messages)
+        
+        extracted_text = result.content
+        break
+    except Exception:
+        err_msg = traceback.format_exc()
+        logger.info(f"error message: {err_msg}")                    
+        raise Exception ("Not able to request to LLM")
+    
+    return extracted_text
+```
 
 아래와 같이 이미지 분석을 선택합니다.
 
