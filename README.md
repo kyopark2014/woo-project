@@ -457,6 +457,26 @@ while True:
 <img width="176" height="309" alt="image" src="https://github.com/user-attachments/assets/a9eacf67-08e9-4fdd-93af-1cd172482257" />
 
 
+## 이미지 분석
+
+이미지가 간단하다면 LLM으로 쉽게 분석이 가능하지만 복잡한 그림이나 표를 포함할 경우에 이미지에 대한 힌트를 활용할 수 있습니다.
+
+
+아래와 같이 이미지 분석을 선택합니다.
+
+<img width="194" height="233" alt="image" src="https://github.com/user-attachments/assets/22a257af-5c26-491c-8e95-afe5159a16a2" />
+
+이후 이미지를 선택하고 아래와 같이 적절한 그림 설명(얻고자 하는 내용)을 입력합니다. 이때 아래와 같이 분석을 수행하게 됩니다.
+
+<img width="742" height="794" alt="image" src="https://github.com/user-attachments/assets/b7f69a7d-b9a2-4ae5-97ae-56f16817cd6b" />
+
+이때의 결과는 아래와 같습니다.
+
+<img width="678" height="671" alt="image" src="https://github.com/user-attachments/assets/380f3dc5-a9ba-4605-805a-1d710d286228" />
+
+
+
+
 ## Reference
 
 [Strands Agents와 오픈 소스 AI 에이전트 SDK 살펴보기](https://aws.amazon.com/ko/blogs/tech/introducing-strands-agents-an-open-source-ai-agents-sdk/)
@@ -478,3 +498,4 @@ while True:
 [Drug Discovery Agent based on Amazon Bedrock](https://github.com/hsr87/drug-discovery-agent)
 
 [Strands Agent - Swarm](https://strandsagents.com/latest/user-guide/concepts/multi-agent/swarm/)
+
