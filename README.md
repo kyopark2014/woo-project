@@ -396,7 +396,7 @@ QA Multi Agent에서는 list로 된 job들을 반복해서 수행합니다. 이�
 
 On-demand로 LLM을 사용할 때에 sigle region에서 병렬로 task를 수행하면 Quota 문제가 발생합니다. 따라서 아래와 같이 get_model에 region을 추가합니다. boto3 client의 region 정보를 달리하면 전체 quota가 늘어나는 효과가 있습니다. 
 
-```pythob
+```python
 def get_model_with_model(region):
     STOP_SEQUENCE = "\n\nHuman:" 
     maxOutputTokens = 4096 # 4k
