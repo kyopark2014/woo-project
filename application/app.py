@@ -37,6 +37,9 @@ mode_descriptions = {
     ],
     "Reflection Agent": [
         "QA Agent의 결과를 업데이트 합니다."
+    ],
+    "이미지 분석": [
+        "이미지를 업로드하면 이미지의 내용을 요약할 수 있습니다."
     ]
 }
 
@@ -52,7 +55,7 @@ with st.sidebar:
     
     # radio selection
     mode = st.radio(
-        label="원하는 대화 형태를 선택하세요. ",options=["Agent", "QA Agent", "Reflection Agent", "QA Agent (Multi)", "QA Agent (Parallel)"], index=0
+        label="원하는 대화 형태를 선택하세요. ",options=["Agent", "QA Agent", "Reflection Agent", "QA Agent (Multi)", "QA Agent (Parallel)", "이미지 분석"], index=0
     )   
     st.info(mode_descriptions[mode][0])
     
@@ -66,6 +69,11 @@ with st.sidebar:
     st.success(f"Connected to {modelName}", icon="💚")
     clear_button = st.button("대화 초기화", key="clear")
 
+    uploaded_file = None
+    if mode=='이미지 분석':
+        st.subheader("🌇 이미지 업로드")
+        uploaded_file = st.file_uploader("이미지 분석을 위한 파일을 선택합니다.", type=["png", "jpg", "jpeg"])
+
 st.title('🔮 '+ mode)
 
 if clear_button or "messages" not in st.session_state:
@@ -78,6 +86,19 @@ if clear_button or "messages" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.greetings = False
+
+# Preview the uploaded image in the sidebar
+file_name = ""
+file_bytes = None
+state_of_code_interpreter = False
+if uploaded_file is not None and clear_button==False:
+    logger.info(f"uploaded_file.name: {uploaded_file.name}")
+
+    if uploaded_file and clear_button==False and mode == '이미지 분석':
+        st.image(uploaded_file, caption="이미지 미리보기", use_container_width=True)
+
+        file_name = uploaded_file.name
+        file_bytes = uploaded_file.getvalue()    
 
 # Display chat messages from history on app rerun
 def display_chat_messages() -> None:
@@ -160,7 +181,16 @@ if prompt := st.chat_input("메시지를 입력하세요."):
                     "notification": [st.empty() for _ in range(500)]
                 }
                 response = asyncio.run(mcp.run_parallel_agent(query=prompt, containers=containers))
-                
+
+            elif mode == "이미지 분석":
+                if uploaded_file is None or uploaded_file == "":
+                    st.error("파일을 먼저 업로드하세요.")
+                    st.stop()
+
+                else:
+                    summary = chat.summarize_image(file_bytes, prompt, st)
+                    st.write(summary)
+
         st.session_state.messages.append({
             "role": "assistant", 
             "content": response
