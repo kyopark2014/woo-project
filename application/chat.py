@@ -7,20 +7,13 @@ import sys
 import info
 import traceback
 import base64
+import utils
+
 from io import BytesIO
 from PIL import Image
 from langchain_core.messages import HumanMessage
 from langchain_aws import ChatBedrock
 from botocore.config import Config
-
-model_name = "Claude 3.5 Sonnet"
-model_type = "claude"
-models = info.get_model_info(model_name)
-model_id = models[0]["model_id"]
-
-# boto3로 region 가져오기
-session = boto3.Session()
-bedrock_region = session.region_name
 
 logging.basicConfig(
     level=logging.INFO,  # Default to INFO level
@@ -30,6 +23,30 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("chat")
+
+
+model_name = "Claude 3.5 Sonnet"
+model_type = "claude"
+models = info.get_model_info(model_name)
+model_id = models[0]["model_id"]
+
+workingDir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(workingDir, "config.json")
+
+config = utils.load_config()
+logger.info(f"config: {config}")
+
+bedrock_region = config["region"] if "region" in config else "us-west-2"
+projectName = config["projectName"] if "projectName" in config else "mcp-rag"
+accountId = config["accountId"] if "accountId" in config else None
+
+if accountId is None:
+    raise Exception ("No accountId")
+region = config["region"] if "region" in config else "us-west-2"
+logger.info(f"region: {region}")
+
+s3_prefix = 'docs'
+s3_image_prefix = 'images'
 
 def update(modelName):
     global model_name, models, model_type, model_id

@@ -12,7 +12,7 @@ logging.basicConfig(
         logging.StreamHandler(sys.stderr)
     ]
 )
-logger = logging.getLogger("rag")
+logger = logging.getLogger("qa_agent")
 
 try:
     mcp = FastMCP(
@@ -44,5 +44,4 @@ async def generate_test_cases(subject: str) -> list:
     return result
 
 if __name__ =="__main__":
-    print(f"###### main ######")
     mcp.run(transport="stdio")
