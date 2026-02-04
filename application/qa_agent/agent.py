@@ -4,6 +4,7 @@ import sys
 import qa_agent.utils as utils
 import boto3
 import re
+import os
 
 from typing import Dict, List, Optional
 from strands import Agent
@@ -20,7 +21,51 @@ logging.basicConfig(
         logging.StreamHandler(sys.stderr)
     ]
 )
-logger = logging.getLogger("mcp-basic")
+logger = logging.getLogger("qa_agent")
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(script_dir, "../config.json")
+
+def load_config():
+    config = None
+    
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading config: {e}")
+        config = {}
+        
+        project_name = "woo-project"
+
+        session = boto3.Session()
+        region = session.region_name
+
+        sts_client = boto3.client("sts", region_name=region)
+        account_id = sts_client.get_caller_identity()["Account"]
+
+        config['projectName'] = project_name
+        config['accountId'] = account_id
+        config['region'] = region
+
+        s3_client = boto3.client("s3", region_name=region)
+        response = s3_client.list_buckets()
+        
+        s3_bucket = None
+        for bucket in response["Buckets"]:
+            if bucket["Name"] == project_name:
+                s3_bucket = bucket["Name"]
+                break
+        config['s3_bucket'] = s3_bucket
+
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2)
+    
+    return config
+
+config = load_config()
+
+knowledge_base_id = config['knowledge_base_id']
 
 index = 0
 def add_notification(containers, message):
@@ -248,7 +293,7 @@ async def run_agent(query: str, system_prompt: Optional[str]=None, historyMode: 
         text=query,
         numberOfResults=5,
         score=0.2,
-        knowledgeBaseId="YVYYTSJWDA",
+        knowledgeBaseId=knowledge_base_id,
         region="us-west-2"
     )
     text = ""
